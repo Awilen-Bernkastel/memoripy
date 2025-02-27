@@ -6,7 +6,7 @@ from .in_memory_storage import InMemoryStorage
 from langchain_core.messages import HumanMessage, SystemMessage
 from .memory_store import MemoryStore
 from .model import ChatModel, EmbeddingModel
-
+import logging
 
 class ConceptExtractionResponse(BaseModel):
     concepts: list[str] = Field(description="List of key concepts extracted from the text.")
@@ -70,7 +70,7 @@ class MemoryManager:
         self.save_memory_to_history()
 
     def get_embedding(self, text: str) -> np.ndarray:
-        print(f"Generating embedding for the provided text...")
+        logging.info(f"Generating embedding for the provided text...")
         embedding = self.embedding_model.get_embedding(text)
         if embedding is None:
             raise ValueError("Failed to generate embedding.")
@@ -78,7 +78,7 @@ class MemoryManager:
         return np.array(standardized_embedding).reshape(1, -1)
 
     def extract_concepts(self, text: str) -> list[str]:
-        print("Extracting key concepts from the provided text...")
+        logging.info("Extracting key concepts from the provided text...")
         return self.chat_model.extract_concepts(text)
 
     def initialize_memory(self):
@@ -90,7 +90,7 @@ class MemoryManager:
         self.memory_store.long_term_memory.extend(long_term)
 
         self.memory_store.cluster_interactions()
-        print(f"Memory initialized with {len(self.memory_store.short_term_memory)} interactions in short-term and {len(self.memory_store.long_term_memory)} in long-term.")
+        logging.info(f"Memory initialized with {len(self.memory_store.short_term_memory)} interactions in short-term and {len(self.memory_store.long_term_memory)} in long-term.")
 
     def retrieve_relevant_interactions(self, query: str, similarity_threshold=40, exclude_last_n=0) -> list:
         query_embedding = self.get_embedding(query)
@@ -102,15 +102,15 @@ class MemoryManager:
         if last_interactions:
             context_interactions = last_interactions[-context_window:]
             context += "\n".join([f"Previous prompt: {r['prompt']}\nPrevious output: {r['output']}" for r in context_interactions])
-            print(f"Using the following last interactions as context for response generation:\n{context}")
+            logging.info(f"Using the following last interactions as context for response generation:\n{context}")
         else:
             context = "No previous interactions available."
-            print(context)
+            logging.info(context)
 
         if retrievals:
             retrieved_context_interactions = retrievals[:context_window]
             retrieved_context = "\n".join([f"Relevant prompt: {r['prompt']}\nRelevant output: {r['output']}" for r in retrieved_context_interactions])
-            print(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
+            logging.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
             context += "\n" + retrieved_context
 
         messages = [
