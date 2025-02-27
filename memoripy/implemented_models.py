@@ -1,5 +1,6 @@
 import numpy as np
 import ollama
+import logging
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings, ChatOpenAI, OpenAIEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
@@ -78,7 +79,7 @@ class OpenAIChatModel(ChatModel):
         chain = self.prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
-        print(f"Concepts extracted: {concepts}")
+        logging.info(f"Concepts extracted: {concepts}")
         return concepts
 
 
@@ -105,7 +106,7 @@ class OllamaChatModel(ChatModel):
         chain = self.prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
-        print(f"Concepts extracted: {concepts}")
+        logging.info(f"Concepts extracted: {concepts}")
         return concepts
 
 class AzureOpenAIEmbeddingModel(EmbeddingModel):
@@ -158,7 +159,7 @@ class AzureOpenAIChatModel(ChatModel):
         chain = self.prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
-        print(f"Concepts extracted: {concepts}")
+        logging.info(f"Concepts extracted: {concepts}")
         return concepts
 
 class ChatCompletionsModel(ChatModel):
@@ -186,7 +187,7 @@ class ChatCompletionsModel(ChatModel):
         chain = self.prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
-        print(f"Concepts extracted: {concepts}")
+        logging.info(f"Concepts extracted: {concepts}")
         return concepts
 
 class OpenRouterChatModel(ChatCompletionsModel):

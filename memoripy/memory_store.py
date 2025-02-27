@@ -1,6 +1,7 @@
 # memory_store.py
 
 import faiss
+import logging
 import numpy as np
 import time
 import networkx as nx
@@ -33,7 +34,7 @@ class MemoryStore:
         concepts = set(interaction.get('concepts', []))
         decay_factor = interaction.get('decay_factor', 1.0)
 
-        print(f"Adding new interaction to short-term memory: '{prompt}'")
+        logging.info(f"Adding new interaction to short-term memory: '{prompt}'")
         # Save the interaction data to short-term memory
         self.short_term_memory.append({
             "id": interaction_id,
@@ -52,7 +53,7 @@ class MemoryStore:
         # Update graph with bidirectional associations
         self.update_graph(concepts)
 
-        print(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
+        logging.info(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
 
     def update_graph(self, concepts):
         # Use the saved concepts to update the graph
@@ -72,14 +73,14 @@ class MemoryStore:
         for idx, access_count in enumerate(self.access_counts):
             if access_count > 10 and self.short_term_memory[idx] not in self.long_term_memory:
                 self.long_term_memory.append(self.short_term_memory[idx])
-                print(f"Moved interaction {self.short_term_memory[idx]['id']} to long-term memory.")
+                logging.info(f"Moved interaction {self.short_term_memory[idx]['id']} to long-term memory.")
 
     def retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
-            print("No interactions available in short-term memory for retrieval.")
+            logging.info("No interactions available in short-term memory for retrieval.")
             return []
 
-        print("Retrieving relevant interactions from short-term memory...")
+        logging.info("Retrieving relevant interactions from short-term memory...")
         relevant_interactions = []
         current_time = time.time()
         decay_rate = 0.0001  # Adjust decay rate as needed
@@ -103,7 +104,7 @@ class MemoryStore:
             reinforcement_factor = np.log1p(self.access_counts[idx])
             # Adjusted similarity
             adjusted_similarity = similarity * decay_factor * reinforcement_factor
-            print(f"Interaction {idx} - Adjusted similarity score: {adjusted_similarity:.2f}%")
+            logging.info(f"Interaction {idx} - Adjusted similarity score: {adjusted_similarity:.2f}%")
 
             if adjusted_similarity >= similarity_threshold:
                 # Mark interaction as relevant
@@ -113,7 +114,7 @@ class MemoryStore:
                 self.timestamps[idx] = current_time
                 self.short_term_memory[idx]['timestamp'] = current_time
                 self.short_term_memory[idx]['access_count'] = self.access_counts[idx]
-                print(f"[DEBUG] Updated access count for interaction {self.short_term_memory[idx]['id']}: {self.access_counts[idx]}")
+                logging.debug(f"Updated access count for interaction {self.short_term_memory[idx]['id']}: {self.access_counts[idx]}")
 
                 # Move interaction to long-term memory if access count exceeds 10
                 if self.access_counts[idx] > 10:
@@ -125,7 +126,7 @@ class MemoryStore:
                 # Add to the list of relevant interactions
                 relevant_interactions.append((adjusted_similarity, self.short_term_memory[idx], self.concepts_list[idx]))
             else:
-                print(f"[DEBUG] Interaction {self.short_term_memory[idx]['id']} was not relevant (similarity: {adjusted_similarity:.2f}%).")
+                logging.debug(f"Interaction {self.short_term_memory[idx]['id']} was not relevant (similarity: {adjusted_similarity:.2f}%).")
 
         # Decrease decay factor for non-relevant interactions
         for idx in range(len(self.short_term_memory)):
@@ -152,11 +153,11 @@ class MemoryStore:
         semantic_interactions = self.retrieve_from_semantic_memory(query_embedding_norm)
         final_interactions.extend(semantic_interactions)
 
-        print(f"Retrieved {len(final_interactions)} relevant interactions from memory.")
+        logging.info(f"Retrieved {len(final_interactions)} relevant interactions from memory.")
         return final_interactions
 
     def spreading_activation(self, query_concepts):
-        print("Spreading activation for concept associations...")
+        logging.info("Spreading activation for concept associations...")
         activated_nodes = {}
         initial_activation = 1.0
         decay_factor = 0.5  # How much the activation decays each step
@@ -177,13 +178,13 @@ class MemoryStore:
                             new_activated_nodes[neighbor] = new_activated_nodes.get(neighbor, 0) + new_activation
             activated_nodes.update(new_activated_nodes)
 
-        print(f"Concepts activated after spreading: {activated_nodes}")
+        logging.info(f"Concepts activated after spreading: {activated_nodes}")
         return activated_nodes
 
     def cluster_interactions(self):
-        print("Clustering interactions to create hierarchical memory...")
+        logging.info("Clustering interactions to create hierarchical memory...")
         if len(self.embeddings) < 2:
-            print("Not enough interactions to perform clustering.")
+            logging.info("Not enough interactions to perform clustering.")
             return
 
         embeddings_matrix = np.vstack([e for e in self.embeddings])
@@ -195,10 +196,10 @@ class MemoryStore:
         for idx, label in enumerate(self.cluster_labels):
             self.semantic_memory[label].append((self.embeddings[idx], self.short_term_memory[idx]))
 
-        print(f"Clustering completed. Total clusters formed: {num_clusters}")
+        logging.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 
     def retrieve_from_semantic_memory(self, query_embedding_norm):
-        print("Retrieving interactions from semantic memory...")
+        logging.info("Retrieving interactions from semantic memory...")
         current_time = time.time()
         # Find the cluster closest to the query
         cluster_similarities = {}
@@ -214,7 +215,7 @@ class MemoryStore:
         if not cluster_similarities:
             return []
         best_cluster_label = max(cluster_similarities, key=cluster_similarities.get)
-        print(f"Best matching cluster identified: {best_cluster_label}")
+        logging.info(f"Best matching cluster identified: {best_cluster_label}")
 
         # Retrieve interactions from the best cluster
         cluster_items = self.semantic_memory[best_cluster_label]
@@ -233,7 +234,7 @@ class MemoryStore:
                 self.timestamps[idx] = current_time
                 self.short_term_memory[idx]['timestamp'] = current_time
                 self.short_term_memory[idx]['access_count'] = self.access_counts[idx]
-                print(f"[DEBUG] Updated access count for interaction {interaction_id}: {self.access_counts[idx]}")
+                logging.debug(f"Updated access count for interaction {interaction_id}: {self.access_counts[idx]}")
 
-        print(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
+        logging.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
         return semantic_interactions

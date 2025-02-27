@@ -1,5 +1,6 @@
 # in_memory_storage.py
 
+import logging
 from .storage import BaseStorage
 
 class InMemoryStorage(BaseStorage):
@@ -10,11 +11,11 @@ class InMemoryStorage(BaseStorage):
         }
 
     def load_history(self):
-        print("Loading history from in-memory storage.")
+        logging.info("Loading history from in-memory storage.")
         return self.history.get("short_term_memory", []), self.history.get("long_term_memory", [])
 
     def save_memory_to_history(self, memory_store):
-        print("Saving history to in-memory storage.")
+        logging.info("Saving history to in-memory storage.")
         self.history = {
             "short_term_memory": [],
             "long_term_memory": []

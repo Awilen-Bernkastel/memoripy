@@ -7,6 +7,7 @@ from pynamodb.attributes import (
     ListAttribute,
     MapAttribute,
 )
+import logging
 from pynamodb.models import Model
 from pydantic import BaseModel
 from memoripy import BaseStorage
@@ -198,6 +199,6 @@ class DynamoStorage(BaseStorage):
             history.long_term_memory.append(interaction)
 
         history.save()
-        print(
+        logging.info(
             f"Saved interaction history to JSON. Short-term: {len(history.short_term_memory)}, Long-term: {len(history.long_term_memory)}"
         )
