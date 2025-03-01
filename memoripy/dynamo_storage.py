@@ -171,16 +171,16 @@ class DynamoStorage(BaseStorage):
             long_term_memory=[],
         )
 
-        for idx in range(len(memory_store.short_term_memory)):
+        for idx, memory in enumerate(memory_store.short_term_memory):
             interaction = ShortTermMemoryAttr(
-                id=memory_store.short_term_memory[idx]["id"],
-                prompt=memory_store.short_term_memory[idx]["prompt"],
-                output=memory_store.short_term_memory[idx]["output"],
+                id=memory["id"],
+                prompt=memory["prompt"],
+                output=memory["output"],
                 embedding=memory_store.embeddings[idx].flatten().tolist(),
                 timestamp=memory_store.timestamps[idx],
                 access_count=memory_store.access_counts[idx],
                 concepts=list(memory_store.concepts_list[idx]),
-                decay_factor=memory_store.short_term_memory[idx].get(
+                decay_factor=memory.get(
                     "decay_factor", 1.0
                 ),
             )
