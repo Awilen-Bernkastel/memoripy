@@ -18,7 +18,7 @@ class JSONStorage(BaseStorage):
     def load_history(self):
         if len(self.history["short_term_memory"]) != 0:
             return self.history.get("short_term_memory", []), self.history.get("long_term_memory", [])
-        elif os.path.exists(self.file_path):
+        if os.path.exists(self.file_path):
             with open(self.file_path, 'r') as f:
                 logging.info("Loading existing interaction history from JSON...")
                 self.history = json.load(f)
