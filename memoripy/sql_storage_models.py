@@ -22,7 +22,7 @@ class Memory(Base):
     timestamp: Mapped[float] = mapped_column(TIMESTAMP())
     access_count: Mapped[int]
     decay_factor: Mapped[float]
-    embeddings: Mapped[List["Embedding"]] = relationship(back_populates="memory")
+    embedding: Mapped[List["Embedding"]] = relationship(back_populates="memory")
     concepts: Mapped[List["Concept"]] = relationship(back_populates="memory")
 
 class Embedding(Base):
@@ -31,7 +31,7 @@ class Embedding(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     memory_id: Mapped[int] = mapped_column(ForeignKey("memory.id"))
     embedding: Mapped[int]
-    memory: Mapped["Memory"] = relationship(back_populates= "embeddings")
+    memory: Mapped["Memory"] = relationship(back_populates= "embedding")
 
 class Concept(Base):
     __tablename__ = "concept"
