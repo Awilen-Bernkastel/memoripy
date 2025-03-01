@@ -18,9 +18,22 @@ class MemoryManager:
     adding interactions, retrieving relevant interactions, and generating responses.
     """
 
-    def __init__(self, chat_model: ChatModel, embedding_model: EmbeddingModel, storage=None):
+    def __init__(self, chat_model: ChatModel, embedding_model: EmbeddingModel, storage=None, prompt_elements=None):
         self.chat_model = chat_model
         self.embedding_model = embedding_model
+        self.prompt_elements = {
+            "intro": "",
+            "stm_user": "Previous prompt: ",
+            "stm_agent": "Previous output: ",
+            "ltm_user": "Relevant prompt: ",
+            "ltm_agent": "Relevant output: ",
+            "outro": None,
+            "no_history": "No previous interactions available.",
+            "system": "You're a helpful assistant.",
+            "prompt_intro": "Current prompt: "
+        }
+        if prompt_elements is not None:
+            self.prompt_elements.update(prompt_elements)
 
         # Initialize memory store with the correct dimension
         self.dimension = self.embedding_model.initialize_embedding_dimension()
@@ -101,21 +114,24 @@ class MemoryManager:
         context = ""
         if last_interactions:
             context_interactions = last_interactions[-context_window:]
-            context += "\n".join([f"Previous prompt: {r['prompt']}\nPrevious output: {r['output']}" for r in context_interactions])
+            context += "\n".join([f"{self.prompt_elements["stm_user"]}{r['prompt']}\n{self.prompt_elements["stm_agent"]}{r['output']}" for r in context_interactions])
             logging.info(f"Using the following last interactions as context for response generation:\n{context}")
         else:
-            context = "No previous interactions available."
+            context = self.prompt_elements["no_history"]
             logging.info(context)
 
         if retrievals:
             retrieved_context_interactions = retrievals[:context_window]
-            retrieved_context = "\n".join([f"Relevant prompt: {r['prompt']}\nRelevant output: {r['output']}" for r in retrieved_context_interactions])
+            retrieved_context = "\n".join([f"{self.prompt_elements["ltm_user"]}{r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrieved_context_interactions])
             logging.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
             context += "\n" + retrieved_context
+        
+        if self.prompt_elements is not None:
+            context += "\n" + self.prompt_elements["outro"]
 
         messages = [
-            SystemMessage(content="You're a helpful assistant."),
-            HumanMessage(content=f"{context}\nCurrent prompt: {prompt}")
+            SystemMessage(content=self.prompt_elements["system"]),
+            HumanMessage(content=f"{context}\n{self.prompt_elements["prompt_intro"]}{prompt}")
         ]
         
         response = self.chat_model.invoke(messages)
