@@ -46,7 +46,11 @@ class JSONStorage(BaseStorage):
                 self.history["short_term_memory"].append(interaction)
             else:
                 old_interaction_ids.remove(interaction[id])
+        # Remove interactions the memory_storage has decayed to deletion
+        self.history["short_term_memory"] = [x for x in self.history["short_term_memory"] if x["id"] not in old_interaction_ids]
 
+        interaction_ids = set([x['id'] for x in self.history['long_term_memory']])
+        old_interaction_ids = set([x['id'] for x in self.history['long_term_memory']])
         # Save long-term memory interactions
         for interaction in memory_store.long_term_memory:
             if interaction['id'] not in interaction_ids:
@@ -54,9 +58,7 @@ class JSONStorage(BaseStorage):
                 self.history["long_term_memory"].append(interaction)
             else:
                 old_interaction_ids.remove(interaction['id'])
-
         # Remove interactions the memory_storage has decayed to deletion
-        self.history["short_term_memory"] = [x for x in self.history["short_term_memory"] if x["id"] not in old_interaction_ids]
         self.history["long_term_memory"] = [x for x in self.history["long_term_memory"] if x["id"] not in old_interaction_ids]
 
         # Save the history to a file
