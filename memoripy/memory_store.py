@@ -10,48 +10,59 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
 from collections import defaultdict
 
+class InteractionData:
+    def __init__(self):
+        self.id = None
+        self.prompt = None
+        self.output = None
+        self.embedding = None
+        self.timestamp = None
+        self.access_count = None
+        self.decay_factor = None
+        self.concepts = None
+        self.normalized_embedding = None
+        self.total_score = None
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+    def normalize_embedding():
+        if self.normalized_embedding is None:
+            self.normalized_embedding = normalize(self.embedding)
+        return self.normalized_embedding
+
 class MemoryStore:
     def __init__(self, dimension=1536):
         self.dimension = dimension
         self.index = faiss.IndexFlatL2(dimension)
         self.short_term_memory = []  # Short-term memory interactions
         self.long_term_memory = []   # Long-term memory interactions
-        self.embeddings = []         # Embeddings for each interaction in short-term memory
-        self.timestamps = []         # Timestamps for decay in short-term memory
-        self.access_counts = []      # Access counts for reinforcement in short-term memory
-        self.concepts_list = []      # Concepts for each interaction in short-term memory
         self.graph = nx.Graph()      # Graph for bidirectional associations
         self.semantic_memory = defaultdict(list)  # Semantic memory clusters
         self.cluster_labels = []     # Labels for each interaction's cluster
 
     def add_interaction(self, interaction):
-        interaction_id = interaction['id']
-        prompt = interaction['prompt']
-        output = interaction['output']
-        embedding = np.array(interaction['embedding']).reshape(1, -1)
-        timestamp = interaction.get('timestamp', time.time())  # Use current time if 'timestamp' is missing
-        access_count = interaction.get('access_count', 1)
-        concepts = set(interaction.get('concepts', []))
-        decay_factor = interaction.get('decay_factor', 1.0)
+        im = InteractionData()
+        im.id = interaction['id']
+        im.prompt = interaction['prompt']
+        im.output = interaction['output']
+        im.embedding = np.array(interaction['embedding']).reshape(1, -1)
+        im.timestamp = interaction.get('timestamp', time.time())  # Use current time if 'timestamp' is missing
+        im.access_count = interaction.get('access_count', 1)
+        im.concepts = set(interaction.get('concepts', []))
+        im.decay_factor = interaction.get('decay_factor', 1.0)
 
         logging.info(f"Adding new interaction to short-term memory: '{prompt}'")
         # Save the interaction data to short-term memory
-        self.short_term_memory.append({
-            "id": interaction_id,
-            "prompt": prompt,
-            "output": output,
-            "timestamp": timestamp,
-            "access_count": access_count,
-            "decay_factor": decay_factor
-        })
-        self.embeddings.append(embedding)
+        self.short_term_memory.append(im)
+
         self.index.add(embedding)
-        self.timestamps.append(timestamp)
-        self.access_counts.append(access_count)
-        self.concepts_list.append(concepts)
 
         # Update graph with bidirectional associations
-        self.update_graph(concepts)
+        self.update_graph(im.concepts)
 
         logging.info(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
 
@@ -68,12 +79,12 @@ class MemoryStore:
                     else:
                         self.graph.add_edge(concept1, concept2, weight=1)
 
-    def classify_memory(self):
-        # Move interactions with access count > 10 to long-term memory
-        for idx, access_count in enumerate(self.access_counts):
-            if access_count > 10 and self.short_term_memory[idx] not in self.long_term_memory:
-                self.long_term_memory.append(self.short_term_memory[idx])
-                logging.info(f"Moved interaction {self.short_term_memory[idx]['id']} to long-term memory.")
+    # def classify_memory(self):
+    #     # Move interactions with access count > 10 to long-term memory
+    #     for im in self.short_term_memory:
+    #         if im.access_count > 10 and im not in self.long_term_memory:
+    #             self.long_term_memory.append(im)
+    #             logging.info(f"Moved interaction {im.id} to long-term memory.")
 
     def retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
@@ -86,63 +97,61 @@ class MemoryStore:
         decay_rate = 0.0001  # Adjust decay rate as needed
 
         # Normalize embeddings for cosine similarity
-        normalized_embeddings = [normalize(e) for e in self.embeddings]
+        normalized_embeddings = [im.normalize_embedding() for im in self.short_term_memory]
         query_embedding_norm = normalize(query_embedding)
 
         # Track indices of relevant interactions
         relevant_indices = set()
 
         # Calculate adjusted similarity for each interaction
-        for idx in range(len(self.short_term_memory) - exclude_last_n):
+        for idx, im in enumerate(self.short_term_memory[:-exclude_last_n]):
             # Cosine similarity
             similarity = cosine_similarity(query_embedding_norm, normalized_embeddings[idx])[0][0] * 100
             # Time-based decay
-            time_diff = current_time - self.timestamps[idx]
-            decay_factor = self.short_term_memory[idx].get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
-            self.short_term_memory[idx]['decay_factor'] = decay_factor
+            time_diff = current_time - im.timestamp
+            im.decay_factor = im.get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
             # Reinforcement
             reinforcement_factor = np.log1p(self.access_counts[idx])
             # Adjusted similarity
-            adjusted_similarity = similarity * decay_factor * reinforcement_factor
-            logging.info(f"Interaction {idx} - Adjusted similarity score: {adjusted_similarity:.2f}%")
+            adjusted_similarity = similarity * im.decay_factor * reinforcement_factor
+            logging.info(f"Interaction {im.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
 
             if adjusted_similarity >= similarity_threshold:
                 # Mark interaction as relevant
-                relevant_indices.add(idx)
+                relevant_indices.add(im.id)
                 # Update access count and timestamp for relevant interactions
-                self.access_counts[idx] += 1
-                self.timestamps[idx] = current_time
-                self.short_term_memory[idx]['timestamp'] = current_time
-                self.short_term_memory[idx]['access_count'] = self.access_counts[idx]
-                logging.debug(f"Updated access count for interaction {self.short_term_memory[idx]['id']}: {self.access_counts[idx]}")
+                im.access_counts += 1
+                im.timestamp = current_time
+                logging.debug(f"Updated access count for interaction {im.id}: {im.access_count}")
 
                 # Move interaction to long-term memory if access count exceeds 10
-                if self.access_counts[idx] > 10:
-                    self.classify_memory()
+                if im.access_count > 10 and im not in self.long_term_memory:
+                    self.long_term_memory.append(im)
+                    logging.info(f"Moved interaction {im.id} to long-term memory.")
 
                 # Increase decay factor for relevant interaction
-                self.short_term_memory[idx]['decay_factor'] *= 1.1  # Increase by 10% or adjust as needed
+                im.decay_factor *= 1.1  # Increase by 10% or adjust as needed
 
                 # Add to the list of relevant interactions
-                relevant_interactions.append((adjusted_similarity, self.short_term_memory[idx], self.concepts_list[idx]))
+                relevant_interactions.append((adjusted_similarity, im))
             else:
                 logging.debug(f"Interaction {self.short_term_memory[idx]['id']} was not relevant (similarity: {adjusted_similarity:.2f}%).")
 
         # Decrease decay factor for non-relevant interactions
-        for idx in range(len(self.short_term_memory)):
-            if idx not in relevant_indices:
+        for im in self.short_term_memory:
+            if im.id not in relevant_indices:
                 # Apply decay for non-relevant interactions
-                self.short_term_memory[idx]['decay_factor'] *= 0.9  # Decrease by 10% or adjust as needed
+                im.decay_factor *= 0.9  # Decrease by 10% or adjust as needed
 
         # Spreading activation
         activated_concepts = self.spreading_activation(query_concepts)
 
         # Integrate spreading activation scores
         final_interactions = []
-        for score, interaction, concepts in relevant_interactions:
-            activation_score = sum([activated_concepts.get(c, 0) for c in concepts])
+        for score, interaction in relevant_interactions:
+            activation_score = sum([activated_concepts.get(c, 0) for c in interaction.concepts])
             total_score = score + activation_score
-            interaction['total_score'] = total_score
+            interaction.total_score = total_score
             final_interactions.append((total_score, interaction))
 
         # Sort interactions based on total_score
@@ -183,18 +192,19 @@ class MemoryStore:
 
     def cluster_interactions(self):
         logging.info("Clustering interactions to create hierarchical memory...")
-        if len(self.embeddings) < 2:
+        if len(self.short_term_memory) < 2:
             logging.info("Not enough interactions to perform clustering.")
             return
 
-        embeddings_matrix = np.vstack([e for e in self.embeddings])
-        num_clusters = min(10, len(self.embeddings))  # Adjust number of clusters based on the number of interactions
+        embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory])
+        num_clusters = min(10, len(self.short_term_memory))  # Adjust number of clusters based on the number of interactions
         kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
         self.cluster_labels = kmeans.labels_
 
         # Build semantic memory clusters
         for idx, label in enumerate(self.cluster_labels):
-            self.semantic_memory[label].append((self.embeddings[idx], self.short_term_memory[idx]))
+            im = self.short_term_memory[idx]
+            self.semantic_memory[label].append((im.embedding, im))
 
         logging.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 
@@ -227,13 +237,12 @@ class MemoryStore:
 
         # Update access count for these retrieved interactions
         for interaction in semantic_interactions:
-            interaction_id = interaction['id']
+            interaction_id = interaction.id
             idx = next((i for i, item in enumerate(self.short_term_memory) if item['id'] == interaction_id), None)
             if idx is not None:
-                self.access_counts[idx] += 1
-                self.timestamps[idx] = current_time
-                self.short_term_memory[idx]['timestamp'] = current_time
-                self.short_term_memory[idx]['access_count'] = self.access_counts[idx]
+                im = self.short_term_memory[idx]
+                im.timestamp = current_time
+                im.access_count += 1
                 logging.debug(f"Updated access count for interaction {interaction_id}: {self.access_counts[idx]}")
 
         logging.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
