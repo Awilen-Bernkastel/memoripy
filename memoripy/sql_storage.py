@@ -33,14 +33,12 @@ class SQLStorage(BaseStorage):
                 s.add(self.owner)
                 s.commit()
 
-    def load_history(self):
-        if self.history["short_term_memory"] == []:
-            with self.session as s:
-                self.history["short_term_memory"] = self.owner.memories[-5:]
-        # TODO... ionno.
-        logging.info("No existing interaction history found in JSON. Starting fresh.")
-        return [], []
-            
+    def load_history(self, last_interactions=5):
+        with self.session as s:
+            self.history["short_term_memory"] = self.owner.memories[-last_interactions:] if len(self.owner.memories) >= last_interactions else self.owner.memories
+            self.history["long_term_memory"]  = self.owner.memories[:last_interactions]  if len(self.owner.memories) >= last_interactions else []
+        return self.history["short_term_memory"], self.history["long_term_memory"]
+
 
     def save_memory_to_history(self, memory_store):
         raise NotImplementedError("The method save_memory_to_history() must be implemented.")
