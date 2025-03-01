@@ -61,7 +61,7 @@ class OpenAIChatModel(ChatModel):
         self.model_name = model_name
         self.llm = ChatOpenAI(model=model_name, api_key=self.api_key)
         self.parser = JsonOutputParser(pydantic_object=ConceptExtractionResponse)
-        self.prompt_template = PromptTemplate(
+        self.concept_extraction_prompt_template = PromptTemplate(
             template=(
                 "Extract key concepts from the following text in a concise, context-specific manner. "
                 "Include only highly relevant and specific concepts.\n"
@@ -76,7 +76,7 @@ class OpenAIChatModel(ChatModel):
         return str(response.content)
 
     def extract_concepts(self, text: str) -> list[str]:
-        chain = self.prompt_template | self.llm | self.parser
+        chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
         logging.info(f"Concepts extracted: {concepts}")
@@ -88,7 +88,7 @@ class OllamaChatModel(ChatModel):
         self.model_name = model_name
         self.llm = ChatOllama(model=model_name, temperature=0)
         self.parser = JsonOutputParser(pydantic_object=ConceptExtractionResponse)
-        self.prompt_template = PromptTemplate(
+        self.concept_extraction_prompt_template = PromptTemplate(
             template=(
                 "Please analyze the following text and provide a list of key concepts that are unique to this content. "
                 "Return only the core concepts that best capture the text's meaning.\n"
@@ -97,13 +97,15 @@ class OllamaChatModel(ChatModel):
             input_variables=["text"],
             partial_variables={"format_instructions": self.parser.get_format_instructions()},
         )
+        self.systemprompt = None
 
     def invoke(self, messages: list) -> str:
         response = self.llm.invoke(messages)
+        # logging.info(response)
         return str(response.content)
 
     def extract_concepts(self, text: str) -> list[str]:
-        chain = self.prompt_template | self.llm | self.parser
+        chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
         logging.info(f"Concepts extracted: {concepts}")
@@ -141,7 +143,7 @@ class AzureOpenAIChatModel(ChatModel):
                                    azure_endpoint=azure_endpoint,
                                    api_version=api_version)
         self.parser = JsonOutputParser(pydantic_object=ConceptExtractionResponse)
-        self.prompt_template = PromptTemplate(
+        self.concept_extraction_prompt_template = PromptTemplate(
             template=(
                 "Extract key concepts from the following text in a concise, context-specific manner. "
                 "Include only highly relevant and specific concepts.\n"
@@ -156,7 +158,7 @@ class AzureOpenAIChatModel(ChatModel):
         return str(response.content)
 
     def extract_concepts(self, text: str) -> list[str]:
-        chain = self.prompt_template | self.llm | self.parser
+        chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
         logging.info(f"Concepts extracted: {concepts}")
@@ -168,7 +170,7 @@ class ChatCompletionsModel(ChatModel):
         self.model_name = model_name
         self.llm = ChatOpenAI(openai_api_base = api_endpoint, openai_api_key = api_key, model_name = model_name)
         self.parser = JsonOutputParser(pydantic_object=ConceptExtractionResponse)
-        self.prompt_template = PromptTemplate(
+        self.concept_extraction_prompt_template = PromptTemplate(
             template=(
                 "Extract key concepts from the following text in a concise, context-specific manner. "
                 "Include only the most highly relevant and specific core concepts that best capture the text's meaning. "
@@ -184,7 +186,7 @@ class ChatCompletionsModel(ChatModel):
         return str(response.content)
     
     def extract_concepts(self, text: str) -> list[str]:
-        chain = self.prompt_template | self.llm | self.parser
+        chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
         logging.info(f"Concepts extracted: {concepts}")
