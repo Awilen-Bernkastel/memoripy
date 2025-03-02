@@ -88,7 +88,7 @@ class MemoryStore:
             time_diff = current_time - im.timestamp
             im.decay_factor = im.get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
             # Reinforcement
-            reinforcement_factor = np.log1p(im.access_counts)
+            reinforcement_factor = np.log1p(im.access_count)
             # Adjusted similarity
             adjusted_similarity = similarity * im.decay_factor * reinforcement_factor
             logging.info(f"Interaction {im.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
@@ -97,7 +97,7 @@ class MemoryStore:
                 # Mark interaction as relevant
                 relevant_indices.add(im.id)
                 # Update access count and timestamp for relevant interactions
-                im.access_counts += 1
+                im.access_count += 1
                 im.timestamp = current_time
                 logging.debug(f"Updated access count for interaction {im.id}: {im.access_count}")
 
