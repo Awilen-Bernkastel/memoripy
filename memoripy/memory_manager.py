@@ -126,7 +126,7 @@ class MemoryManager:
             logging.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
             context += "\n" + retrieved_context
         
-        if self.prompt_elements is not None:
+        if self.prompt_elements["outro"] is not None:
             context += "\n" + self.prompt_elements["outro"]
 
         messages = [
