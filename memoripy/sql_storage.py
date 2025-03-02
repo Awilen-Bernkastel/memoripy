@@ -74,7 +74,7 @@ class SQLStorage(BaseStorage):
     def save_memory_to_history(self, memory_store):
         # Save short-term memory interactions
         with self.session as s:
-            self.owner = s.merge(self.owner)
+            self.owner = s.merge(self.owner) # reattach owner to Session
             interaction_ids = set([x["id"] for x in self.history["short_term_memory"]])
             for idx, memory in enumerate(memory_store.short_term_memory):
                 if memory["id"] not in interaction_ids:
