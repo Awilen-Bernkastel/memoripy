@@ -117,7 +117,7 @@ class MemoryManager:
     def generate_response(self, prompt: str, last_interactions: list, retrievals: list, context_window=3) -> str:
         context = self.prompt_elements["intro"]
         if retrievals:
-            context += self.promp_elements["intro_ltm"]
+            context += self.prompt_elements["intro_ltm"]
             retrieved_context_interactions = retrievals[:context_window]
             retrieved_context = "\n".join([f"{self.prompt_elements["ltm_user"]}{r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrieved_context_interactions])
             logging.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
