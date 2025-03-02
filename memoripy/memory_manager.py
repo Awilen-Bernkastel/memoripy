@@ -23,10 +23,14 @@ class MemoryManager:
         self.embedding_model = embedding_model
         self.prompt_elements = {
             "intro": "",
+            "intro_stm": "",
             "stm_user": "Previous prompt: ",
             "stm_agent": "Previous output: ",
+            "outro_stm": "",
+            "intro_ltm": "",
             "ltm_user": "Relevant prompt: ",
             "ltm_agent": "Relevant output: ",
+            "outro_ltm": "",
             "outro": "",
             "no_history": "No previous interactions available.",
             "system": "You're a helpful assistant.",
@@ -113,15 +117,19 @@ class MemoryManager:
     def generate_response(self, prompt: str, last_interactions: list, retrievals: list, context_window=3) -> str:
         context = self.prompt_elements["intro"]
         if retrievals:
+            context += self.promp_elements["intro_ltm"]
             retrieved_context_interactions = retrievals[:context_window]
             retrieved_context = "\n".join([f"{self.prompt_elements["ltm_user"]}{r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrieved_context_interactions])
             logging.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
             context += "\n" + retrieved_context
+            context += self.prompt_elements["outro_ltm"]
 
         if last_interactions:
+            context += self.prompt_elements["intro_stm"]
             context_interactions = last_interactions[-context_window:]
             context += "\n".join([f"{self.prompt_elements["stm_user"]}{r['prompt']}\n{self.prompt_elements["stm_agent"]}{r['output']}" for r in context_interactions])
             logging.info(f"Using the following last interactions as context for response generation:\n{context}")
+            context += self.prompt_elements["outro_stm"]
         elif context == self.prompt_elements["intro"]:
             context = self.prompt_elements["no_history"]
             logging.info(context)
