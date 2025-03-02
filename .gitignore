@@ -20,3 +20,5 @@ build/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
+
+interaction_history.json
