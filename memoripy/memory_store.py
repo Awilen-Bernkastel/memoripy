@@ -1,4 +1,5 @@
 # memory_store.py
+# Apache 2.0 license, Modified by Awilen Bernkastel
 
 import faiss
 import logging

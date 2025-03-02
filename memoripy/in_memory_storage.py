@@ -1,4 +1,5 @@
 # in_memory_storage.py
+# Apache 2.0 license, Modified by Awilen Bernkastel
 
 import logging
 from .storage import BaseStorage

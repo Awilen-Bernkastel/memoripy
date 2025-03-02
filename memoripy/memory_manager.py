@@ -1,3 +1,5 @@
+# Apache 2.0 license, Modified by Awilen Bernkastel
+
 import numpy as np
 import time
 import uuid

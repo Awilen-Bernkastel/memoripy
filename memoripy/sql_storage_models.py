@@ -1,8 +1,9 @@
 # sql_storage_models.py
+# Apache 2.0 license, Created by Awilen Bernkastel
 
 # This is probably VERY slow.
 # The only advantage of this is to avoid rewriting
-# a full file for every. Single. Interaction.
+# a full file for every single Interaction.
 
 from sqlalchemy import Integer, String, ForeignKey, Text, Float
 from sqlalchemy.orm import DeclarativeBase

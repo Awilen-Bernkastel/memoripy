@@ -1,4 +1,5 @@
 #ollama_modelfile_parser.py
+# Apache 2.0 license, Created by Awilen Bernkastel
 
 class modelfile:
     def __init__(self):

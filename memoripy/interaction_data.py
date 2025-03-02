@@ -1,4 +1,5 @@
 #interaction_data.py
+# Apache 2.0 license, Created by Awilen Bernkastel
 
 from sklearn.preprocessing import normalize
 
