@@ -9,30 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
 from collections import defaultdict
-
-class InteractionData:
-    def __init__(self):
-        self.id = None
-        self.prompt = None
-        self.output = None
-        self.embedding = None
-        self.timestamp = None
-        self.access_count = None
-        self.decay_factor = None
-        self.concepts = None
-        self.normalized_embedding = None
-        self.total_score = None
-
-    def __getitem__(self, key):
-        return getattr(self, key)
-
-    def __setitem__(self, key, value):
-        setattr(self, key, value)
-
-    def normalize_embedding():
-        if self.normalized_embedding is None:
-            self.normalized_embedding = normalize(self.embedding)
-        return self.normalized_embedding
+from .interaction_data import InteractionData
 
 class MemoryStore:
     def __init__(self, dimension=1536):
@@ -55,11 +32,11 @@ class MemoryStore:
         im.concepts = set(interaction.get('concepts', []))
         im.decay_factor = interaction.get('decay_factor', 1.0)
 
-        logging.info(f"Adding new interaction to short-term memory: '{prompt}'")
+        logging.info(f"Adding new interaction to short-term memory: '{interaction['prompt']}'")
         # Save the interaction data to short-term memory
         self.short_term_memory.append(im)
 
-        self.index.add(embedding)
+        self.index.add(im.embedding)
 
         # Update graph with bidirectional associations
         self.update_graph(im.concepts)
@@ -111,7 +88,7 @@ class MemoryStore:
             time_diff = current_time - im.timestamp
             im.decay_factor = im.get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
             # Reinforcement
-            reinforcement_factor = np.log1p(self.access_counts[idx])
+            reinforcement_factor = np.log1p(im.access_counts)
             # Adjusted similarity
             adjusted_similarity = similarity * im.decay_factor * reinforcement_factor
             logging.info(f"Interaction {im.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
@@ -243,7 +220,7 @@ class MemoryStore:
                 im = self.short_term_memory[idx]
                 im.timestamp = current_time
                 im.access_count += 1
-                logging.debug(f"Updated access count for interaction {interaction_id}: {self.access_counts[idx]}")
+                logging.debug(f"Updated access count for interaction {interaction_id}: {im.access_count}")
 
         logging.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
         return semantic_interactions
