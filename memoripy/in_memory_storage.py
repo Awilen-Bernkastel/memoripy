@@ -2,6 +2,7 @@
 
 import logging
 from .storage import BaseStorage
+from .interaction_data import InteractionData
 
 class InMemoryStorage(BaseStorage):
     def __init__(self):
@@ -22,17 +23,7 @@ class InMemoryStorage(BaseStorage):
         }
 
         # Save short-term memory interactions
-        for idx in range(len(memory_store.short_term_memory)):
-            interaction = {
-                'id': memory_store.short_term_memory[idx]['id'],
-                'prompt': memory_store.short_term_memory[idx]['prompt'],
-                'output': memory_store.short_term_memory[idx]['output'],
-                'embedding': memory_store.embeddings[idx].flatten().tolist(),
-                'timestamp': memory_store.timestamps[idx],
-                'access_count': memory_store.access_counts[idx],
-                'concepts': list(memory_store.concepts_list[idx]),
-                'decay_factor': memory_store.short_term_memory[idx].get('decay_factor', 1.0)
-            }
+        for interaction in memory_store.short_term_memory:
             self.history["short_term_memory"].append(interaction)
 
         # Save long-term memory interactions
