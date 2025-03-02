@@ -1,4 +1,4 @@
-# OpenAI API example:
+# Ollama API example:
 
 from memoripy import MemoryManager, SQLStorage
 from memoripy.implemented_models import OllamaChatModel, OllamaEmbeddingModel
