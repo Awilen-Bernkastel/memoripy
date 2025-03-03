@@ -33,3 +33,9 @@ class ChatModel(ABC):
         """
         pass
 
+    @abstractmethod
+    def stream(self, messages: list) -> str:
+        """
+        Generate a response from the chat model given a list of messages in streaming mode.
+        """
+        pass

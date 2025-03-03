@@ -79,6 +79,10 @@ class OpenAIChatModel(ChatModel):
         response = self.llm.invoke(messages)
         return str(response.content)
 
+    def stream(self, messages: list) -> str:
+        response = self.llm.stream(messages)
+        return response
+
     def extract_concepts(self, text: str) -> list[str]:
         chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
@@ -113,8 +117,12 @@ class OllamaChatModel(ChatModel):
     def invoke(self, messages: list) -> str:
         chain = self.system_prompt_template | self.llm
         response = chain.invoke(messages)
-        # logging.info(response)
         return str(response.content)
+
+    def stream(self, messages: list) -> str:
+        chain = self.system_prompt_template | self.llm
+        response = chain.stream(messages)
+        return response
 
     def extract_concepts(self, text: str) -> list[str]:
         old_temperature = self.llm.temperature
@@ -172,6 +180,10 @@ class AzureOpenAIChatModel(ChatModel):
         response = self.llm.invoke(messages)
         return str(response.content)
 
+    def stream(self, messages: list) -> str:
+        response = self.llm.stream(messages)
+        return response
+
     def extract_concepts(self, text: str) -> list[str]:
         chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
@@ -199,7 +211,11 @@ class ChatCompletionsModel(ChatModel):
     def invoke(self, messages: list) -> str:
         response = self.llm.invoke(messages)
         return str(response.content)
-    
+
+    def stream(self, messages: list) -> str:
+        response = self.llm.stream(messages)
+        return response
+
     def extract_concepts(self, text: str) -> list[str]:
         chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})

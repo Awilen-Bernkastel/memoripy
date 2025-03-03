@@ -116,7 +116,7 @@ class MemoryManager:
         query_concepts = self.extract_concepts(query)
         return self.memory_store.retrieve(query_embedding, query_concepts, similarity_threshold, exclude_last_n=exclude_last_n)
 
-    def generate_response(self, prompt: str, last_interactions: list, retrievals: list, context_window=3) -> str:
+    def generate_response(self, prompt: str, last_interactions: list, retrievals: list, context_window=3, stream=True) -> str:
         context = self.prompt_elements["intro"]
         if retrievals:
             context += self.prompt_elements["intro_ltm"]
@@ -144,6 +144,9 @@ class MemoryManager:
             HumanMessage(content=f"{context}\n{self.prompt_elements["prompt_intro"]}{prompt}")
         ]
         
-        response = self.chat_model.invoke(messages)
+        if stream:
+            response = self.chat_model.stream(messages)
+        else:
+            response = self.chat_model.invoke(messages)
 
         return response
