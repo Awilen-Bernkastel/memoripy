@@ -22,3 +22,6 @@ build/
 .ipynb_checkpoints/
 
 interaction_history.json
+
+# Remnant of code that might still be useful
+*.old
