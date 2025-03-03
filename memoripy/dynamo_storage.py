@@ -1,36 +1,32 @@
-import os
+# memoripy/dynamo_storage.py
 
+import logging
+import os
 from dotenv import load_dotenv
+from pynamodb.models import Model
 from pynamodb.attributes import (
     UnicodeAttribute,
     NumberAttribute,
     ListAttribute,
     MapAttribute,
 )
-import logging
-from pynamodb.models import Model
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 from memoripy import BaseStorage
 from memoripy.memory_store import MemoryStore
 
 load_dotenv()
 
-
 def _get_host() -> str | None:
     return os.environ.get("MEMORIPY_DYNAMO_HOST", None)
-
 
 def _get_region() -> str:
     return os.environ.get("MEMORIPY_DYNAMO_REGION", "us-east-1")
 
+def _get_read_capacity() -> int:
+    return int(os.environ.get("MEMORIPY_DYNAMO_READ_CAPACITY", "1"))
 
-def _get_read_capacity() -> str:
-    return os.environ.get("MEMORIPY_DYNAMO_READ_CAPACITY", "1")
-
-
-def _get_write_capacity() -> str:
-    return os.environ.get("MEMORIPY_DYNAMO_WRITE_CAPACITY", "1")
-
+def _get_write_capacity() -> int:
+    return int(os.environ.get("MEMORIPY_DYNAMO_WRITE_CAPACITY", "1"))
 
 class ShortTermMemoryAttr(MapAttribute):
     id = UnicodeAttribute()
@@ -41,7 +37,6 @@ class ShortTermMemoryAttr(MapAttribute):
     decay_factor = NumberAttribute()
     embedding = ListAttribute(of=NumberAttribute)
     concepts = ListAttribute(of=UnicodeAttribute)
-
 
 class ShortTermMemory(BaseModel):
     id: str
@@ -75,8 +70,7 @@ class ShortTermMemory(BaseModel):
             concepts=[str(x) for x in attr.concepts],
         )
 
-
-class LongTermTermMemoryAttr(MapAttribute):
+class LongTermMemoryAttr(MapAttribute):
     id = UnicodeAttribute()
     prompt = UnicodeAttribute()
     output = UnicodeAttribute()
@@ -84,7 +78,6 @@ class LongTermTermMemoryAttr(MapAttribute):
     access_count = NumberAttribute()
     decay_factor = NumberAttribute()
     total_score = NumberAttribute()
-
 
 class LongTermMemory(BaseModel):
     id: str
@@ -105,7 +98,7 @@ class LongTermMemory(BaseModel):
         setattr(self, key, value)
 
     @classmethod
-    def new_from_attr(cls, attr: LongTermTermMemoryAttr):
+    def new_from_attr(cls, attr: LongTermMemoryAttr):
         return cls(
             id=attr.id,
             prompt=attr.prompt,
@@ -116,7 +109,6 @@ class LongTermMemory(BaseModel):
             total_score=attr.total_score,
         )
 
-
 class Memory(Model):
     class Meta:
         table_name = "memoripy_memory"
@@ -125,8 +117,7 @@ class Memory(Model):
 
     set_id = UnicodeAttribute(hash_key=True)
     short_term_memory = ListAttribute(of=ShortTermMemoryAttr)
-    long_term_memory = ListAttribute(of=LongTermTermMemoryAttr)
-
+    long_term_memory = ListAttribute(of=LongTermMemoryAttr)
 
 class DynamoStorage(BaseStorage):
     """Leverage DynamoDB for storage of memory interactions."""
@@ -145,8 +136,8 @@ class DynamoStorage(BaseStorage):
         """
         if not Memory.exists():
             Memory.create_table(
-                read_capacity_units=int(_get_read_capacity()),
-                write_capacity_units=int(_get_write_capacity()),
+                read_capacity_units=_get_read_capacity(),
+                write_capacity_units=_get_write_capacity(),
                 wait=True,
             )
         self.set_id = set_id
@@ -154,12 +145,8 @@ class DynamoStorage(BaseStorage):
     def load_history(self):
         try:
             memory = Memory.get(self.set_id)
-            short_term_memory = [
-                ShortTermMemory.new_from_attr(attr) for attr in memory.short_term_memory
-            ]
-            long_term_memory = [
-                LongTermMemory.new_from_attr(attr) for attr in memory.long_term_memory
-            ]
+            short_term_memory = [self._attr_to_model(attr, ShortTermMemory) for attr in memory.short_term_memory]
+            long_term_memory = [self._attr_to_model(attr, LongTermMemory) for attr in memory.long_term_memory]
             return short_term_memory, long_term_memory
         except Memory.DoesNotExist:
             return [], []
@@ -171,34 +158,40 @@ class DynamoStorage(BaseStorage):
             long_term_memory=[],
         )
 
-        for idx, memory in enumerate(memory_store.short_term_memory):
-            interaction = ShortTermMemoryAttr(
-                id=memory["id"],
-                prompt=memory["prompt"],
-                output=memory["output"],
-                embedding=memory_store.embeddings[idx].flatten().tolist(),
-                timestamp=memory_store.timestamps[idx],
-                access_count=memory_store.access_counts[idx],
-                concepts=list(memory_store.concepts_list[idx]),
-                decay_factor=memory.get(
-                    "decay_factor", 1.0
-                ),
-            )
+        for memory in memory_store.short_term_memory:
+            interaction = self._memory_to_attr(memory, ShortTermMemoryAttr, memory_store)
             history.short_term_memory.append(interaction)
 
         for memory in memory_store.long_term_memory:
-            interaction = LongTermTermMemoryAttr(
-                id=memory["id"],
-                prompt=memory["prompt"],
-                output=memory["output"],
-                timestamp=memory["timestamp"],
-                access_count=memory["access_count"],
-                decay_factor=memory["decay_factor"],
-                total_score=memory["total_score"],
-            )
+            interaction = self._memory_to_attr(memory, LongTermMemoryAttr)
             history.long_term_memory.append(interaction)
 
         history.save()
-        logging.info(
-            f"Saved interaction history to JSON. Short-term: {len(history.short_term_memory)}, Long-term: {len(history.long_term_memory)}"
+        logging.info(f"Saved interaction history. Short-term: {len(history.short_term_memory)}, Long-term: {len(history.long_term_memory)}")
+
+    @staticmethod
+    def _attr_to_model(attr, model_class):
+        return create_model(model_class.__name__, **{k: v for k, v in attr.items()})
+
+    def _memory_to_attr(self, memory, attr_class, memory_store=None):
+        if isinstance(memory, dict) and memory_store:
+            embedding = memory_store.embeddings[memory_store.short_term_memory.index(memory)].flatten().tolist()
+            return attr_class(
+                id=memory["id"],
+                prompt=memory["prompt"],
+                output=memory["output"],
+                timestamp=memory_store.timestamps[memory_store.short_term_memory.index(memory)],
+                access_count=memory_store.access_counts[memory_store.short_term_memory.index(memory)],
+                concepts=list(memory_store.concepts_list[memory_store.short_term_memory.index(memory)]),
+                embedding=embedding,
+                decay_factor=float(memory.get("decay_factor", 1.0)),
+            )
+        return attr_class(
+            id=memory["id"],
+            prompt=memory["prompt"],
+            output=memory["output"],
+            timestamp=memory["timestamp"],
+            access_count=int(memory["access_count"]),
+            decay_factor=float(memory["decay_factor"]),
+            total_score=float(memory["total_score"]) if "total_score" in memory else 0.0,
         )
