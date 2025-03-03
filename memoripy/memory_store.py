@@ -57,13 +57,6 @@ class MemoryStore:
                     else:
                         self.graph.add_edge(concept1, concept2, weight=1)
 
-    # def classify_memory(self):
-    #     # Move interactions with access count > 10 to long-term memory
-    #     for im in self.short_term_memory:
-    #         if im.access_count > 10 and im not in self.long_term_memory:
-    #             self.long_term_memory.append(im)
-    #             logging.info(f"Moved interaction {im.id} to long-term memory.")
-
     def retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
             logging.info("No interactions available in short-term memory for retrieval.")
