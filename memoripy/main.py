@@ -7,9 +7,9 @@ from langchain_ollama import ChatOllama
 
 def main(new_prompt):
     # Define chat and embedding models
-    chat_model = ChatOllama                       # Choose 'openai' or 'ollama' for chat
+    chat_model = ChatOllama                     # Choose 'openai' or 'ollama' for chat
     chat_model_name = "qwen2.5:7b"              # Specific chat model name
-    embedding_model = ChatOllama                  # Choose 'openai' or 'ollama' for embeddings
+    embedding_model = ChatOllama                # Choose 'openai' or 'ollama' for embeddings
     embedding_model_name = "mxbai-embed-large"  # Specific embedding model name
 
     # Choose your storage option
