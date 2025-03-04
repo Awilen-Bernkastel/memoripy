@@ -5,7 +5,7 @@
 # The only advantage of this is to avoid rewriting
 # a full file for every single Interaction.
 
-from sqlalchemy import Integer, String, ForeignKey, Text, Float
+from sqlalchemy import Integer, String, ForeignKey, Text, Float, Boolean
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
@@ -29,6 +29,7 @@ class Memory(Base):
     embedding: Mapped[List["Embedding"]] = relationship(back_populates="memory")
     concepts: Mapped[List["Concept"]] = relationship(back_populates="memory")
     owner: Mapped["MemoryOwner"] = relationship(back_populates = "memories")
+    is_long_term: Mapped[bool] = mapped_column(Boolean())
 
 class Embedding(Base):
     __tablename__ = "embedding"

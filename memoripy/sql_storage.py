@@ -36,12 +36,12 @@ class SQLStorage(BaseStorage):
                 s.add(self.owner)
                 s.commit()
 
-    def load_history(self, last_interactions=5):
+    def load_history(self):
         with self.session as s:
             self.owner = s.merge(self.owner)
-            interactions = self.owner.memories[-last_interactions:] if len(self.owner.memories) >= last_interactions else self.owner.memories
+            interactions = [x for x in self.owner.memories if x.is_long_term == False]
             self._update_history(interactions, "short_term_memory")
-            interactions = self.owner.memories[:last_interactions] if len(self.owner.memories) >= last_interactions else []
+            interactions = [x for x in self.owner.memories if x.is_long_term == True]
             self._update_history(interactions, "long_term_memory")
         return self.history["short_term_memory"], self.history["long_term_memory"]
 
@@ -79,7 +79,8 @@ class SQLStorage(BaseStorage):
                     output=memory.output,
                     timestamp=memory.timestamp,
                     access_count=memory.access_count,
-                    decay_factor=memory.decay_factor or 1.0
+                    decay_factor=memory.decay_factor or 1.0,
+                    is_long_term=False
                 )
                 for embed in memory.embedding.flatten().tolist():
                     new_interaction.embedding.append(Embedding(embedding=embed))
@@ -91,7 +92,7 @@ class SQLStorage(BaseStorage):
         # Save long-term memory interactions to buffer
         with session as s:
             self.owner = s.merge(self.owner)
-            old_long_term_memory = [memory.uuid for memory in self.owner.long_term_memory]
+            old_long_term_memory = [memory.uuid for memory in self.owner.memories]
             for memory in memory_store.long_term_memory:
                 if memory.id not in old_long_term_memory:
                     new_interaction = Memory(
@@ -100,7 +101,11 @@ class SQLStorage(BaseStorage):
                         output=memory.output,
                         timestamp=memory.timestamp,
                         access_count=memory.access_count,
-                        decay_factor=memory.decay_factor or 1.0
+                        decay_factor=memory.decay_factor or 1.0,
+                        is_long_term=True
                     )
-                    self.owner.long_term_memory.append(new_interaction)
+                    self.owner.memories.append(new_interaction)
+                else:
+                    interaction = [i for i in self.owner.memories if i.uuid == memory.id][0]
+                    interaction.is_long_term = True
             s.commit()
