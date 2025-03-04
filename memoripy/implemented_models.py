@@ -1,5 +1,6 @@
 # Apache 2.0 license, Modified by Awilen Bernkastel
 
+from typing import Iterator
 import numpy as np
 import ollama
 import logging
@@ -12,7 +13,7 @@ from .ollama_modelfile_parser import modelfile
 from pydantic import BaseModel, Field
 from .model import ChatModel, EmbeddingModel
 from .memory_manager import ConceptExtractionResponse
-
+from langchain_core.runnables.utils import Output
 
 class OpenAIEmbeddingModel(EmbeddingModel):
     def __init__(self, api_key, model_name="text-embedding-3-small"):
@@ -76,11 +77,29 @@ class OpenAIChatModel(ChatModel):
         )
 
     def invoke(self, messages: list) -> str:
-        response = self.llm.invoke(messages)
+        chain = None
+        if hasattr(self, "customPrompt"):
+            chain = self.customPrompt[0]
+            if len(self.customPrompt) > 1:
+                for prompt in self.customPrompt[1:]:
+                    chain |= prompt
+            chain |= self.llm
+        else:
+            chain = self.llm
+        response = chain.invoke(messages)
         return str(response.content)
 
-    def stream(self, messages: list) -> str:
-        response = self.llm.stream(messages)
+    def stream(self, messages: list) -> Iterator[Output]:
+        chain = None
+        if hasattr(self, "customPrompt"):
+            chain = self.customPrompt[0]
+            if len(self.customPrompt) > 1:
+                for prompt in self.customPrompt[1:]:
+                    chain |= prompt
+            chain |= self.llm
+        else:
+            chain = self.llm
+        response = chain.stream(messages)
         return response
 
     def extract_concepts(self, text: str) -> list[str]:
@@ -115,12 +134,20 @@ class OllamaChatModel(ChatModel):
         )
 
     def invoke(self, messages: list) -> str:
-        chain = self.system_prompt_template | self.llm
+        chain = self.system_prompt_template
+        if hasattr(self, "customPrompt"):
+            for prompt in self.customPrompt:
+                chain |= prompt
+        chain |= self.llm
         response = chain.invoke(messages)
         return str(response.content)
 
-    def stream(self, messages: list) -> str:
-        chain = self.system_prompt_template | self.llm
+    def stream(self, messages: list) -> Iterator[Output]:
+        chain = self.system_prompt_template
+        if hasattr(self, "customPrompt"):
+            for prompt in self.customPrompt:
+                chain |= prompt
+        chain |= self.llm
         response = chain.stream(messages)
         return response
 
@@ -177,11 +204,29 @@ class AzureOpenAIChatModel(ChatModel):
         )
 
     def invoke(self, messages: list) -> str:
-        response = self.llm.invoke(messages)
+        chain = None
+        if hasattr(self, "customPrompt"):
+            chain = self.customPrompt[0]
+            if len(self.customPrompt) > 1:
+                for prompt in self.customPrompt[1:]:
+                    chain |= prompt
+            chain |= self.llm
+        else:
+            chain = self.llm
+        response = chain.invoke(messages)
         return str(response.content)
 
-    def stream(self, messages: list) -> str:
-        response = self.llm.stream(messages)
+    def stream(self, messages: list) -> Iterator[Output]:
+        chain = None
+        if hasattr(self, "customPrompt"):
+            chain = self.customPrompt[0]
+            if len(self.customPrompt) > 1:
+                for prompt in self.customPrompt[1:]:
+                    chain |= prompt
+            chain |= self.llm
+        else:
+            chain = self.llm
+        response = chain.stream(messages)
         return response
 
     def extract_concepts(self, text: str) -> list[str]:
@@ -209,11 +254,29 @@ class ChatCompletionsModel(ChatModel):
         )
 
     def invoke(self, messages: list) -> str:
-        response = self.llm.invoke(messages)
+        chain = None
+        if hasattr(self, "customPrompt"):
+            chain = self.customPrompt[0]
+            if len(self.customPrompt) > 1:
+                for prompt in self.customPrompt[1:]:
+                    chain |= prompt
+            chain |= self.llm
+        else:
+            chain = self.llm
+        response = chain.invoke(messages)
         return str(response.content)
 
-    def stream(self, messages: list) -> str:
-        response = self.llm.stream(messages)
+    def stream(self, messages: list) -> Iterator[Output]:
+        chain = None
+        if hasattr(self, "customPrompt"):
+            chain = self.customPrompt[0]
+            if len(self.customPrompt) > 1:
+                for prompt in self.customPrompt[1:]:
+                    chain |= prompt
+            chain |= self.llm
+        else:
+            chain = self.llm
+        response = chain.stream(messages)
         return response
 
     def extract_concepts(self, text: str) -> list[str]:

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
-
+from langchain_core.prompts import PromptTemplate
 
 class EmbeddingModel(ABC):
     @abstractmethod
@@ -39,3 +39,8 @@ class ChatModel(ABC):
         Generate a response from the chat model given a list of messages in streaming mode.
         """
         pass
+
+    def add_custom_prompt(self, prompt: PromptTemplate):
+        if not hasattr(self, "customPrompts"):
+            self.customPrompt = []
+        self.customPrompt.append(prompt)
