@@ -1,5 +1,6 @@
 # Apache 2.0 license, Modified by Awilen Bernkastel
 
+from datetime import datetime
 import numpy as np
 import time
 import uuid
@@ -121,7 +122,8 @@ class MemoryManager:
         if retrievals:
             context += self.prompt_elements["intro_ltm"]
             retrieved_context_interactions = retrievals[:context_window]
-            retrieved_context = "\n".join([f"{self.prompt_elements["ltm_user"]}{r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrieved_context_interactions])
+            retrieved_context = "\n".join([f"({datetime.fromtimestamp(r["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')}) {self.prompt_elements["ltm_user"]}\
+                                           {r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrieved_context_interactions])
             logging.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
             context += "\n" + retrieved_context
             context += self.prompt_elements["outro_ltm"]
@@ -129,7 +131,7 @@ class MemoryManager:
         if last_interactions:
             context += self.prompt_elements["intro_stm"]
             context_interactions = last_interactions[-context_window:]
-            context += "\n".join([f"{self.prompt_elements["stm_user"]}{r['prompt']}\n{self.prompt_elements["stm_agent"]}{r['output']}" for r in context_interactions])
+            context += "\n".join([f"({datetime.fromtimestamp(r["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')}) {self.prompt_elements["stm_user"]}{r['prompt']}\n{self.prompt_elements["stm_agent"]}{r['output']}" for r in context_interactions])
             logging.info(f"Using the following last interactions as context for response generation:\n{context}")
             context += self.prompt_elements["outro_stm"]
         elif context == self.prompt_elements["intro"]:
@@ -141,7 +143,7 @@ class MemoryManager:
 
         messages = [
             SystemMessage(content=self.prompt_elements["system"]),
-            HumanMessage(content=f"{context}\n{self.prompt_elements["prompt_intro"]}{prompt}")
+            HumanMessage(content=f"{context}\n({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}){self.prompt_elements["prompt_intro"]}{prompt}")
         ]
         
         if stream:
