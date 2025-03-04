@@ -28,88 +28,79 @@ class SQLStorage(BaseStorage):
         self.session = Session(engine)
 
         with self.session as s:
-            stmt = select(MemoryOwner).where(MemoryOwner.name==owner)
-            for memory_owner in s.scalars(stmt):
-                self.owner = memory_owner
-            if self.owner is None:
-                self.owner = MemoryOwner()
-                self.owner.name = owner
+            owner_record = s.query(MemoryOwner).filter_by(name=owner).first()
+            if owner_record:
+                self.owner = owner_record
+            else:
+                self.owner = MemoryOwner(name=owner)
                 s.add(self.owner)
                 s.commit()
 
     def load_history(self, last_interactions=5):
         with self.session as s:
-            self.owner = s.merge(self.owner) # reattach owner to Session
+            self.owner = s.merge(self.owner)
             interactions = self.owner.memories[-last_interactions:] if len(self.owner.memories) >= last_interactions else self.owner.memories
-            present_memories_uuid = [x.id for x in self.history["short_term_memory"]]
-            for interaction in interactions:
-                if interaction.uuid not in present_memories_uuid:
-                    im = InteractionData()
-                    im.id = interaction.uuid
-                    im.prompt = interaction.prompt
-                    im.output = interaction.output
-                    im.embedding = [x.embedding for x in interaction.embedding]
-                    im.timestamp = interaction.timestamp
-                    im.concepts = [x.concept for x in interaction.concepts]
-                    im.access_count = interaction.access_count
-                    im.decay_factor = interaction.decay_factor
-                    self.history["short_term_memory"].append(im)
-
-            interactions = self.owner.memories[:last_interactions]  if len(self.owner.memories) >= last_interactions else []
-            present_memories_uuid = [x.id for x in self.history["long_term_memory"]]
-            for interaction in interactions:
-                if interaction.uuid not in present_memories_uuid:
-                    im = InteractionData()
-                    im.id = interaction.uuid
-                    im.prompt = interaction.prompt
-                    im.output = interaction.output
-                    im.embedding = [x.embedding for x in interaction.embedding]
-                    im.timestamp = interaction.timestamp
-                    im.concepts = [x.concept for x in interaction.concepts]
-                    im.access_count = interaction.access_count
-                    im.decay_factor = interaction.decay_factor
-                    self.history["long_term_memory"].append(im)
-
+            self._update_history(interactions, "short_term_memory")
+            interactions = self.owner.memories[:last_interactions] if len(self.owner.memories) >= last_interactions else []
+            self._update_history(interactions, "long_term_memory")
         return self.history["short_term_memory"], self.history["long_term_memory"]
 
+    def _update_history(self, interactions, memory_type):
+        present_memories_uuid = {x.id for x in self.history[memory_type]}
+        for interaction in interactions:
+            if interaction.uuid not in present_memories_uuid:
+                im = InteractionData()
+                im.id = interaction.uuid
+                im.prompt = interaction.prompt
+                im.output = interaction.output
+                im.embedding = [x.embedding for x in interaction.embedding]
+                im.timestamp = interaction.timestamp
+                im.concepts = [x.concept for x in interaction.concepts]
+                im.access_count = interaction.access_count
+                im.decay_factor = interaction.decay_factor
+                self.history[memory_type].append(im)
+
     def save_memory_to_history(self, memory_store):
-        # Save short-term memory interactions
         with self.session as s:
-            self.owner = s.merge(self.owner) # reattach owner to Session
-            interaction_ids = set([x["id"] for x in self.history["short_term_memory"]])
-            for idx, memory in enumerate(memory_store.short_term_memory):
-                if memory["id"] not in interaction_ids:
-                    interaction = Memory()
-                    self.owner.memories.append(interaction)
-
-                    interaction.uuid = memory["id"]
-                    interaction.prompt = memory["prompt"]
-                    interaction.output = memory["output"]
-
-                    for embed in memory["embedding"].flatten().tolist():
-                        temp = Embedding()
-                        temp.embedding = embed
-                        interaction.embedding.append(temp)
-
-                    # interaction.embedding = memory["embedding"].flatten().tolist()
-                    interaction.timestamp = memory["timestamp"]
-                    interaction.access_count = memory["access_count"]
-
-                    for concept in list(memory["concepts"]):
-                        temp = Concept()
-                        temp.concept = concept
-                        interaction.concepts.append(temp)
-                    # interaction.concepts = list(memory["concepts"])
-                    interaction.decay_factor = memory["decay_factor"] or 1.0
-
-            old_interaction_ids = set([x["id"] for x in self.history["long_term_memory"]])
-            for idx, memory in enumerate(memory_store.long_term_memory):
-                if memory["id"] in old_interaction_ids:
-                    old_interaction_ids.remove(memory["id"])
-            decayed_interactions = [x for x in self.owner.memories if x.id in old_interaction_ids]
-            for interaction in decayed_interactions:
-                s.delete(interaction)
-
+            self.owner = s.merge(self.owner)
+            self._save_short_term_memory(memory_store, s)
+            self._save_long_term_memory(memory_store, s)
             s.commit()
 
         logging.info(f"Saved interaction history to SQL db. Short-term: {len(self.history['short_term_memory'])}, Long-term: {len(self.history['long_term_memory'])}")
+
+    def _save_short_term_memory(self, memory_store, session):
+        interaction_ids = set(memory.id for memory in self.history["short_term_memory"])
+        for memory in memory_store.short_term_memory:
+            if memory.id not in interaction_ids:
+                new_interaction = Memory(
+                    uuid=memory.id,
+                    prompt=memory.prompt,
+                    output=memory.output,
+                    timestamp=memory.timestamp,
+                    access_count=memory.access_count,
+                    decay_factor=memory.decay_factor or 1.0
+                )
+                for embed in memory.embedding.flatten().tolist():
+                    new_interaction.embedding.append(Embedding(embedding=embed))
+                for concept in list(memory.concepts):
+                    new_interaction.concepts.append(Concept(concept=concept))
+                self.owner.memories.append(new_interaction)
+    
+    def _save_long_term_memory(self, memory_store, session):
+        # Save long-term memory interactions to buffer
+        with session as s:
+            self.owner = s.merge(self.owner)
+            old_long_term_memory = [memory.uuid for memory in self.owner.long_term_memory]
+            for memory in memory_store.long_term_memory:
+                if memory.id not in old_long_term_memory:
+                    new_interaction = Memory(
+                        uuid=memory.id,
+                        prompt=memory.prompt,
+                        output=memory.output,
+                        timestamp=memory.timestamp,
+                        access_count=memory.access_count,
+                        decay_factor=memory.decay_factor or 1.0
+                    )
+                    self.owner.long_term_memory.append(new_interaction)
+            s.commit()
