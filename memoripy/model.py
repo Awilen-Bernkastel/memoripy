@@ -41,6 +41,6 @@ class ChatModel(ABC):
         pass
 
     def add_custom_prompt(self, prompt: PromptTemplate):
-        if not hasattr(self, "customPrompts"):
+        if not hasattr(self, "customPrompt"):
             self.customPrompt = []
         self.customPrompt.append(prompt)
