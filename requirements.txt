@@ -20,6 +20,7 @@ jsonpatch
 jsonpointer
 langchain
 langchain-core
+langchain-community
 langchain-ollama
 langchain-openai
 langchain-text-splitters
