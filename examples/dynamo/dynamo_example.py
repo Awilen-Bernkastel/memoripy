@@ -1,6 +1,6 @@
 from memoripy import MemoryManager
-from memoripy.dynamo_storage import DynamoStorage
-from memoripy.implemented_models import AzureOpenAIEmbeddingModel, AzureOpenAIChatModel
+from memoripy.memory_storage.dynamo_storage import DynamoStorage
+from memoripy.model_interfaces.azure_openai_models import AzureOpenAIEmbeddingModel, AzureOpenAIChatModel
 
 
 def main():

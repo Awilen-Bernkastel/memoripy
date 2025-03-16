@@ -10,7 +10,7 @@ import logging
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.schema import MetaData
-from .interaction_data import InteractionData
+from ..interaction_data import InteractionData
 
 from .sql_storage_models import MemoryOwner, Memory, Base, Embedding, Concept
 from .storage import BaseStorage

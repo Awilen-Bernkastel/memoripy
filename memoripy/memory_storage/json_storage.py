@@ -3,7 +3,7 @@ import json
 import logging
 import os
 
-from .interaction_data import InteractionData
+from ..interaction_data import InteractionData
 from .storage import BaseStorage
 
 class JSONStorage(BaseStorage):

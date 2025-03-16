@@ -5,7 +5,7 @@
 # The only advantage of this is to avoid rewriting
 # a full file for every single Interaction.
 
-from sqlalchemy import Integer, String, ForeignKey, Text, Float, Boolean
+from sqlalchemy import String, ForeignKey, Text, Float, Boolean
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column

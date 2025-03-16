@@ -3,7 +3,6 @@
 
 import logging
 from .storage import BaseStorage
-from .interaction_data import InteractionData
 
 class InMemoryStorage(BaseStorage):
     def __init__(self):

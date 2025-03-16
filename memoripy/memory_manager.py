@@ -5,10 +5,10 @@ import numpy as np
 import time
 import uuid
 from pydantic import BaseModel, Field
-from .in_memory_storage import InMemoryStorage
+from .memory_storage.in_memory_storage import InMemoryStorage
 from langchain_core.messages import HumanMessage, SystemMessage
 from .memory_store import MemoryStore
-from .model import ChatModel, EmbeddingModel
+from .model_interfaces.model import ChatModel, EmbeddingModel
 import logging
 
 class ConceptExtractionResponse(BaseModel):
@@ -37,7 +37,8 @@ class MemoryManager:
             "outro": "",
             "no_history": "No previous interactions available.",
             "system": "You're a helpful assistant.",
-            "prompt_intro": "Current prompt: "
+            "prompt_intro": "Current prompt: ",
+            "response_intro": "You: "
         }
         if prompt_elements is not None:
             self.prompt_elements.update(prompt_elements)
@@ -143,7 +144,7 @@ class MemoryManager:
 
         messages = [
             SystemMessage(content=self.prompt_elements["system"]),
-            HumanMessage(content=f"{context}\n({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}){self.prompt_elements["prompt_intro"]}{prompt}")
+            HumanMessage(content=f"{context}\n({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}){self.prompt_elements["prompt_intro"]}{prompt} {self.prompt_elements["response_intro"]}")
         ]
         
         if stream:

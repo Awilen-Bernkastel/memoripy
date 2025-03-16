@@ -1,7 +1,7 @@
 # Ollama API example:
 
 from memoripy import MemoryManager, SQLStorage, JSONStorage, InMemoryStorage
-from memoripy.implemented_models import OllamaChatModel, OllamaEmbeddingModel
+from memoripy.model_interfaces.ollama_models import OllamaChatModel, OllamaEmbeddingModel
 
 def main():
     # Define chat and embedding models

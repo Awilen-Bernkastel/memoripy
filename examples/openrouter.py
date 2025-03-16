@@ -1,7 +1,8 @@
 # OpenRouter example:
 
 from memoripy import MemoryManager, JSONStorage
-from memoripy.implemented_models import OpenRouterChatModel, OllamaEmbeddingModel
+from memoripy.model_interfaces.chat_completion_models import OpenRouterChatModel
+from memoripy.model_interfaces.ollama_models import OllamaEmbeddingModel
 
 def main():
     # Replace 'your-api-key' with your actual API key for the chat completions service you use

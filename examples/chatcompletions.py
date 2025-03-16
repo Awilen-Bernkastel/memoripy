@@ -1,7 +1,8 @@
 # General chat completions endpoint example (using OpenRouter):
 
 from memoripy import MemoryManager, JSONStorage
-from memoripy.implemented_models import ChatCompletionsModel, OllamaEmbeddingModel
+from memoripy.model_interfaces.chat_completion_models import ChatCompletionsModel
+from memoripy.model_interfaces.ollama_models import OllamaEmbeddingModel
 
 def main():
     # Set API endpoint and key

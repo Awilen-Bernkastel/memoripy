@@ -2,7 +2,7 @@
 
 import sys
 from memory_manager import MemoryManager
-from json_storage import JSONStorage
+from .memory_storage.json_storage import JSONStorage
 from langchain_ollama import ChatOllama
 
 def main(new_prompt):

@@ -1,7 +1,7 @@
 # Azure AI Example
 
 from memoripy import MemoryManager, JSONStorage
-from memoripy.implemented_models import AzureOpenAIEmbeddingModel, AzureOpenAIChatModel
+from memoripy.model_interfaces.azure_openai_models import AzureOpenAIEmbeddingModel, AzureOpenAIChatModel
 
 def main():
     # Set here your actual Azure OpenAI API key, endpoint and API version

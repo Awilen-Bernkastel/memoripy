@@ -1,7 +1,8 @@
 # OpenAI API example:
 
 from memoripy import MemoryManager, JSONStorage
-from memoripy.implemented_models import OpenAIChatModel, OllamaEmbeddingModel
+from memoripy.model_interfaces.openai_models import OpenAIChatModel
+from memoripy.model_interfaces.ollama_models import OllamaEmbeddingModel
 
 def main():
     # Replace 'your-api-key' with your actual OpenAI API key
