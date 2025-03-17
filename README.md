@@ -90,9 +90,11 @@ if __name__ == "__main__":
 
 - `MemoryStore`: Stores and organizes interactions in short-term and long-term memory, with support for clustering and retrieval based on relevance.
 
-- `InMemoryStorage` and `JSONStorage`: Store memory in either in-memory data structures or JSON files.
+- `InMemoryStorage`, `JSONStorage` and `SQLStorage` (NEW!): Store memory in either in-memory data structures, JSON files, or a DBMS (SQLite by default).
 
 - `BaseStorage`: Abstract base class for defining storage methods.
+
+- `InteractionData`: memory object (replaces the various dicts and lists in MemoryStore.)
 
 ##Core Functionalities
 1. **Initialize Memory**: Load previous interactions from the chosen storage and initialize memory.
