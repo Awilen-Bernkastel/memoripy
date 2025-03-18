@@ -26,11 +26,11 @@ class MemoryManager:
         self.embedding_model = embedding_model
         self.prompt_elements = {
             "intro": "",
-            "intro_stm": "",
+            "intro_stm": "This is the current conversation: ",
             "stm_user": "Previous prompt: ",
             "stm_agent": "Previous output: ",
             "outro_stm": "",
-            "intro_ltm": "",
+            "intro_ltm": "Those are past interactions that you can use as additional context: ",
             "ltm_user": "Relevant prompt: ",
             "ltm_agent": "Relevant output: ",
             "outro_ltm": "",
