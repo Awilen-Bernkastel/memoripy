@@ -63,15 +63,20 @@ class SQLStorage(BaseStorage):
     def save_memory_to_history(self, memory_store):
         with self.session as s:
             self.owner = s.merge(self.owner)
-            self._save_short_term_memory(memory_store, s)
-            self._save_long_term_memory(memory_store, s)
+            self._save_short_term_memory(memory_store)
+            self._save_long_term_memory(memory_store)
             s.commit()
 
         logging.info(f"Saved interaction history to SQL db. Short-term: {len(self.history['short_term_memory'])}, Long-term: {len(self.history['long_term_memory'])}")
 
-    def _save_short_term_memory(self, memory_store, session):
+    def _save_short_term_memory(self, memory_store):
         interaction_ids = set(memory.id for memory in self.history["short_term_memory"])
+        dict_memory = {m.uuid:m for m in self.owner.memories}
         for memory in memory_store.short_term_memory:
+            # Short-term memory deletion
+            if memory.forget == True and memory.is_long_term == False:
+                self.owner.memories.remove(dict_memory[memory.id])
+                continue
             if memory.id not in interaction_ids:
                 new_interaction = Memory(
                     uuid=memory.id,
@@ -88,24 +93,8 @@ class SQLStorage(BaseStorage):
                     new_interaction.concepts.append(Concept(concept=concept))
                 self.owner.memories.append(new_interaction)
     
-    def _save_long_term_memory(self, memory_store, session):
-        # Save long-term memory interactions to buffer
-        with session as s:
-            self.owner = s.merge(self.owner)
-            old_long_term_memory = [memory.uuid for memory in self.owner.memories]
-            for memory in memory_store.long_term_memory:
-                if memory.id not in old_long_term_memory:
-                    new_interaction = Memory(
-                        uuid=memory.id,
-                        prompt=memory.prompt,
-                        output=memory.output,
-                        timestamp=memory.timestamp,
-                        access_count=memory.access_count,
-                        decay_factor=memory.decay_factor or 1.0,
-                        is_long_term=True
-                    )
-                    self.owner.memories.append(new_interaction)
-                else:
-                    interaction = [i for i in self.owner.memories if i.uuid == memory.id][0]
-                    interaction.is_long_term = True
-            s.commit()
+    def _save_long_term_memory(self, memory_store):
+        # Any memory that will go long-term has been registered as a short-term memory to begin with.
+        dict_memory = {m.uuid:m for m in self.owner.memories}
+        for memory in memory_store.long_term_memory:
+            dict_memory[memory.id].is_long_term = True

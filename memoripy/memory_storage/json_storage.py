@@ -18,8 +18,7 @@ class JSONStorage(BaseStorage):
         if os.path.exists(self.file_path):
             with open(self.file_path, 'r') as f:
                 logging.info("Loading existing interaction history from JSON...")
-                interactions = json.load(f)
-                self.history.update(interactions)
+                self.history = json.load(f)
         else:
             logging.info("No existing interaction history found in JSON. Starting fresh.")
         return self.history.get("short_term_memory", []), self.history.get("long_term_memory", [])
@@ -33,7 +32,7 @@ class JSONStorage(BaseStorage):
 
     def save_memory_to_history(self, memory_store):
         history = {
-            "short_term_memory": [self._serialize_interaction(m) for m in memory_store.short_term_memory],
+            "short_term_memory": [self._serialize_interaction(m) for m in memory_store.short_term_memory if m.forget is False],
             "long_term_memory": [self._serialize_interaction(m) for m in memory_store.long_term_memory]
         }
         with open(self.file_path + "~", 'w+') as f:
@@ -47,12 +46,12 @@ class JSONStorage(BaseStorage):
 
     def _serialize_interaction(self, memory):
         return {
-            'id': memory['id'],
-            'prompt': memory['prompt'],
-            'output': memory['output'],
-            'embedding': memory["embedding"].flatten().tolist(),
-            'timestamp': memory["timestamp"],
-            'access_count': memory["access_count"],
-            'concepts': list(memory["concepts"]),
+            'id': memory.id,
+            'prompt': memory.prompt,
+            'output': memory.output,
+            'embedding': memory.embedding.flatten().tolist(),
+            'timestamp': memory.timestamp,
+            'access_count': memory.access_count,
+            'concepts': list(memory.concepts),
             'decay_factor': memory.get('decay_factor', 1.0)
         }

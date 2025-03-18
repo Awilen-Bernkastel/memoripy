@@ -68,51 +68,47 @@ class MemoryStore:
         decay_rate = 0.0001  # Adjust decay rate as needed
 
         # Normalize embeddings for cosine similarity
-        normalized_embeddings = [im.normalize_embedding() for im in self.short_term_memory]
         query_embedding_norm = normalize(query_embedding)
 
-        # Track indices of relevant interactions
-        relevant_indices = set()
-
         # Calculate adjusted similarity for each interaction
-        for idx, im in enumerate(self.short_term_memory[:-exclude_last_n]):
-            # Cosine similarity
-            similarity = cosine_similarity(query_embedding_norm, normalized_embeddings[idx])[0][0] * 100
-            # Time-based decay
-            time_diff = current_time - im.timestamp
-            im.decay_factor = im.get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
-            # Reinforcement
-            reinforcement_factor = np.log1p(im.access_count)
-            # Adjusted similarity
-            adjusted_similarity = similarity * im.decay_factor * reinforcement_factor
-            logging.info(f"Interaction {im.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
+        if len(self.short_term_memory) > exclude_last_n:
+            for im in self.short_term_memory[:-exclude_last_n]:
+                similarity = cosine_similarity(query_embedding_norm, im.normalize_embedding())[0][0] * 100
+                time_diff = current_time - im.timestamp
+                im.decay_factor = im.get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
+                reinforcement_factor = np.log1p(im.access_count)
+                adjusted_similarity = similarity * im.decay_factor * reinforcement_factor
+                logging.info(f"Interaction {im.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
 
-            if adjusted_similarity >= similarity_threshold:
-                # Mark interaction as relevant
-                relevant_indices.add(im.id)
-                # Update access count and timestamp for relevant interactions
-                im.access_count += 1
-                im.timestamp = current_time
-                logging.debug(f"Updated access count for interaction {im.id}: {im.access_count}")
+                if adjusted_similarity >= similarity_threshold:
+                    # Update access count and timestamp for relevant interactions
+                    im.access_count += 1
+                    im.timestamp = current_time
+                    logging.debug(f"Updated access count for interaction {im.id}: {im.access_count}")
 
-                # Move interaction to long-term memory if access count exceeds 10
-                if im.access_count > 10 and im not in self.long_term_memory:
-                    self.long_term_memory.append(im)
-                    logging.info(f"Moved interaction {im.id} to long-term memory.")
+                    # Move interaction to long-term memory if access count exceeds 10
+                    if im.access_count > 10 and im not in self.long_term_memory:
+                        self.long_term_memory.append(im)
+                        logging.info(f"Moved interaction {im.id} to long-term memory.")
 
-                # Increase decay factor for relevant interaction
-                im.decay_factor *= 1.1  # Increase by 10% or adjust as needed
+                    # Increase decay factor for relevant interaction
+                    im.decay_factor *= 1.1  # Increase by 10% or adjust as needed
 
-                # Add to the list of relevant interactions
-                relevant_interactions.append((adjusted_similarity, im))
-            else:
-                logging.debug(f"Interaction {self.short_term_memory[idx]['id']} was not relevant (similarity: {adjusted_similarity:.2f}%).")
-
-        # Decrease decay factor for non-relevant interactions
-        for im in self.short_term_memory:
-            if im.id not in relevant_indices:
-                # Apply decay for non-relevant interactions
-                im.decay_factor *= 0.9  # Decrease by 10% or adjust as needed
+                    # Add to the list of relevant interactions
+                    relevant_interactions.append((adjusted_similarity, im))
+                else:
+                    logging.debug(f"Interaction {im.id} was not relevant (similarity: {adjusted_similarity:.2f}%).")
+                    # Apply decay for non-relevant interactions
+                    im.decay_factor *= 0.9
+                    # Mark for forgetting
+                    if im not in self.long_term_memory and im.decay_factor < 0.1:
+                        im.forget = True
+                        concepts_remaining = set([m.concepts for m in self.short_term_memory if m.forget == False]).add([m.concepts for m in self.long_term_memory])
+                        # Check the concepts of the interaction about to be removed
+                        for concept in im.concepts:
+                            if concept not in concepts_remaining:
+                                # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
+                                self.graph.remove_node(concept)
 
         # Spreading activation
         activated_concepts = self.spreading_activation(query_concepts)
