@@ -10,6 +10,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from .memory_store import MemoryStore
 from .model_interfaces.model import ChatModel, EmbeddingModel
 import logging
+from .interaction_data import InteractionData
 
 class ConceptExtractionResponse(BaseModel):
     concepts: list[str] = Field(description="List of key concepts extracted from the text.")
@@ -77,16 +78,16 @@ class MemoryManager:
     def add_interaction(self, prompt: str, output: str, embedding: np.ndarray, concepts: list[str]):
         timestamp = time.time()
         interaction_id = str(uuid.uuid4())
-        interaction = {
-            "id": interaction_id,
-            "prompt": prompt,
-            "output": output,
-            "embedding": embedding.tolist(),
-            "timestamp": timestamp,
-            "access_count": 1,
-            "concepts": [str(concept) for concept in concepts], # Prevent the "unhashable type: 'dict'" error
-            "decay_factor": 1.0,
-        }
+        interaction = InteractionData(
+            id= interaction_id,
+            prompt= prompt,
+            output= output,
+            embedding= embedding.tolist(),
+            timestamp= timestamp,
+            access_count= 1,
+            concepts= [str(concept) for concept in concepts], # Prevent the "unhashable type: 'dict'" error
+            decay_factor= 1.0,
+        )
         self.memory_store.add_interaction(interaction)
         self.save_memory_to_history()
 
@@ -106,7 +107,7 @@ class MemoryManager:
         short_term, long_term = self.load_history()
         for interaction in short_term:
             # Standardize the dimension of each interaction's embedding
-            interaction['embedding'] = self.standardize_embedding(np.array(interaction['embedding']))
+            interaction.embedding = self.standardize_embedding(np.array(interaction['embedding']))
             self.memory_store.add_interaction(interaction)
         self.memory_store.long_term_memory.extend(long_term)
 
