@@ -10,10 +10,10 @@ def main(prompt):
     embedding_model_name = "mxbai-embed-large"  # Specific embedding model name, this is MixedBreadAI's embedding model.
 
     # Choose your storage option
-    storage_option = InMemoryStorage()
+    storage_option = JSONStorage()
     # Or use another storage option:
-    # storage_option = JSONStorage()
     # storage_option = SQLStorage()
+    # storage_option = InMemoryStorage()
 
     # Initialize the MemoryManager with the selected models and storage
     memory_manager = MemoryManager(OllamaChatModel(chat_model_name), OllamaEmbeddingModel(embedding_model_name), storage=storage_option)
