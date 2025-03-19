@@ -15,20 +15,21 @@ class JSONStorage(BaseStorage):
         }
 
     def load_history(self):
+        self.history = {
+            "short_term_memory": [],
+            "long_term_memory": []
+        }
         if os.path.exists(self.file_path):
             with open(self.file_path, 'r') as f:
                 logging.info("Loading existing interaction history from JSON...")
-                self.history = json.load(f)
+                history = json.load(f)
+                for im in history['short_term_memory']:
+                    self.history['short_term_memory'].append(self._deserialize_interaction(im))
+                for im in history['long_term_memory']:
+                    self.history['long_term_memory'].append(self._deserialize_interaction(im))
         else:
             logging.info("No existing interaction history found in JSON. Starting fresh.")
         return self.history.get("short_term_memory", []), self.history.get("long_term_memory", [])
-
-    def _load_interactions(self, interactions, memory_type):
-        for interaction in interactions:
-            im = InteractionData()
-            for key, value in interaction.items():
-                setattr(im, key, value)
-            self.history[memory_type].append(im)
 
     def save_memory_to_history(self, memory_store):
         history = {
@@ -51,7 +52,21 @@ class JSONStorage(BaseStorage):
             'output': memory.output,
             'embedding': memory.embedding.flatten().tolist(),
             'timestamp': memory.timestamp,
+            'last_accessed': memory.last_accessed,
             'access_count': memory.access_count,
             'concepts': list(memory.concepts),
             'decay_factor': memory.get('decay_factor', 1.0)
         }
+
+    def _deserialize_interaction(self, memory):
+        return InteractionData(
+            id=memory['id'],
+            prompt=memory['prompt'],
+            output=memory['output'],
+            embedding=memory['embedding'],
+            timestamp=memory['timestamp'],
+            last_accessed=memory['last_accessed'],
+            access_count=memory['access_count'],
+            concepts=list(memory['concepts']),
+            decay_factor=memory.get('decay_factor', 1.0)
+        )

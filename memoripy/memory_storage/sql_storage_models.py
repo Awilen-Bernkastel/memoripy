@@ -23,6 +23,7 @@ class Memory(Base):
     prompt: Mapped[str] = mapped_column(Text())
     output: Mapped[str] = mapped_column(Text())
     timestamp: Mapped[float] = mapped_column(Float())
+    last_accessed: Mapped[float] = mapped_column(Float())
     access_count: Mapped[int]
     decay_factor: Mapped[float]
     owner_id: Mapped[int] = mapped_column(ForeignKey("memory_owner.id"))

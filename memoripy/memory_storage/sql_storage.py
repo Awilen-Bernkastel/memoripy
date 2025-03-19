@@ -57,6 +57,7 @@ class SQLStorage(BaseStorage):
                 im.timestamp = interaction.timestamp
                 im.concepts = [x.concept for x in interaction.concepts]
                 im.access_count = interaction.access_count
+                im.last_accessed = interaction.last_accessed
                 im.decay_factor = interaction.decay_factor
                 self.history[memory_type].append(im)
 
@@ -83,6 +84,7 @@ class SQLStorage(BaseStorage):
                     prompt=memory.prompt,
                     output=memory.output,
                     timestamp=memory.timestamp,
+                    last_accessed=memory.last_accessed,
                     access_count=memory.access_count,
                     decay_factor=memory.decay_factor or 1.0,
                     is_long_term=False

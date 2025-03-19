@@ -10,6 +10,7 @@ class InteractionData:
         self.output = None
         self.embedding = None
         self.timestamp = None
+        self.last_accessed = None
         self.access_count = None
         self.decay_factor = None
         self.concepts = None

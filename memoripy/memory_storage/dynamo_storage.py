@@ -33,6 +33,7 @@ class ShortTermMemoryAttr(MapAttribute):
     prompt = UnicodeAttribute()
     output = UnicodeAttribute()
     timestamp = NumberAttribute()
+    last_accessed = NumberAttribute()
     access_count = NumberAttribute()
     decay_factor = NumberAttribute()
     embedding = ListAttribute(of=NumberAttribute)
@@ -44,6 +45,7 @@ class ShortTermMemory(BaseModel):
     output: str
     timestamp: float
     access_count: int
+    last_accessed: float
     decay_factor: float
     embedding: list[float]
     concepts: list[str]
@@ -64,6 +66,7 @@ class ShortTermMemory(BaseModel):
             prompt=attr.prompt,
             output=attr.output,
             timestamp=attr.timestamp,
+            last_accessed=attr.last_accessed,
             access_count=int(attr.access_count),
             decay_factor=attr.decay_factor,
             embedding=[float(x) for x in attr.embedding],
@@ -75,6 +78,7 @@ class LongTermMemoryAttr(MapAttribute):
     prompt = UnicodeAttribute()
     output = UnicodeAttribute()
     timestamp = NumberAttribute()
+    last_accessed = NumberAttribute()
     access_count = NumberAttribute()
     decay_factor = NumberAttribute()
     total_score = NumberAttribute()
@@ -85,6 +89,7 @@ class LongTermMemory(BaseModel):
     output: str
     timestamp: float
     access_count: int
+    last_accessed: float
     decay_factor: float
     total_score: float
 
@@ -104,6 +109,7 @@ class LongTermMemory(BaseModel):
             prompt=attr.prompt,
             output=attr.output,
             timestamp=attr.timestamp,
+            last_accessed=attr.last_accessed,
             access_count=int(attr.access_count),
             decay_factor=attr.decay_factor,
             total_score=attr.total_score,
@@ -159,7 +165,7 @@ class DynamoStorage(BaseStorage):
         )
 
         for memory in memory_store.short_term_memory:
-            interaction = self._memory_to_attr(memory, ShortTermMemoryAttr, memory_store)
+            interaction = self._memory_to_attr(memory, ShortTermMemoryAttr)
             history.short_term_memory.append(interaction)
 
         for memory in memory_store.long_term_memory:
@@ -173,25 +179,15 @@ class DynamoStorage(BaseStorage):
     def _attr_to_model(attr, model_class):
         return create_model(model_class.__name__, **{k: v for k, v in attr.items()})
 
-    def _memory_to_attr(self, memory, attr_class, memory_store=None):
-        if isinstance(memory, dict) and memory_store:
-            embedding = memory_store.embeddings[memory_store.short_term_memory.index(memory)].flatten().tolist()
-            return attr_class(
-                id=memory["id"],
-                prompt=memory["prompt"],
-                output=memory["output"],
-                timestamp=memory_store.timestamps[memory_store.short_term_memory.index(memory)],
-                access_count=memory_store.access_counts[memory_store.short_term_memory.index(memory)],
-                concepts=list(memory_store.concepts_list[memory_store.short_term_memory.index(memory)]),
-                embedding=embedding,
-                decay_factor=float(memory.get("decay_factor", 1.0)),
-            )
+    def _memory_to_attr(self, memory, attr_class):
         return attr_class(
-            id=memory["id"],
-            prompt=memory["prompt"],
-            output=memory["output"],
-            timestamp=memory["timestamp"],
-            access_count=int(memory["access_count"]),
-            decay_factor=float(memory["decay_factor"]),
-            total_score=float(memory["total_score"]) if "total_score" in memory else 0.0,
+            id=memory.id,
+            prompt=memory.prompt,
+            output=memory.output,
+            timestamp=memory.timestamp,
+            last_accessed=memory.last_accessed,
+            access_count=memory.access_count,
+            concepts=list(memory.concepts),
+            embedding=memory.embedding.flatten().tolist(),
+            decay_factor=float(memory.get("decay_factor", 1.0)),
         )
