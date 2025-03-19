@@ -103,7 +103,7 @@ class MemoryStore:
                     # Mark for forgetting
                     if im not in self.long_term_memory and im.decay_factor < 0.1:
                         im.forget = True
-                        concepts_remaining = set([m.concepts for m in self.short_term_memory if m.forget == False]).add([m.concepts for m in self.long_term_memory])
+                        concepts_remaining = set([m.concepts for m in self.short_term_memory if m.forget == False]).union(set([m.concepts for m in self.long_term_memory]))
                         # Check the concepts of the interaction about to be removed
                         for concept in im.concepts:
                             if concept not in concepts_remaining:
