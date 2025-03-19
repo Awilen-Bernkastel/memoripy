@@ -1,7 +1,7 @@
 # memory_store.py
 # Apache 2.0 license, Modified by Awilen Bernkastel
 
-import faiss
+# import faiss
 import logging
 import numpy as np
 import time
@@ -15,7 +15,7 @@ from .interaction_data import InteractionData
 class MemoryStore:
     def __init__(self, dimension=1536):
         self.dimension = dimension
-        self.index = faiss.IndexFlatL2(dimension)
+        # self.index = faiss.IndexFlatL2(dimension)
         self.short_term_memory = []  # Short-term memory interactions
         self.long_term_memory = []   # Long-term memory interactions
         self.graph = nx.Graph()      # Graph for bidirectional associations
@@ -37,21 +37,19 @@ class MemoryStore:
         # Save the interaction data to short-term memory
         self.short_term_memory.append(im)
 
-        self.index.add(im.embedding)
+        # Add the embedding to the index
+        # self.index.add(im.embedding)
 
         # Update graph with bidirectional associations
         self.update_graph(im.concepts)
 
+        # Update clusters with new interaction
+        self.update_clusters(im)
+
         logging.info(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
-    
-    def remove_interaction(self, interaction):
-        concepts_remaining = set([m.concepts for m in self.short_term_memory if m.forget == False]).union(set([m.concepts for m in self.long_term_memory]))
-        # Check the concepts of the interaction about to be removed
-        for concept in interaction.concepts:
-            if concept not in concepts_remaining:
-                # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
-                self.graph.remove_node(concept)
-        # Remove the interaction from the clusters
+        
+    def update_clusters(interaction):
+        pass
 
     def update_graph(self, concepts):
         # Use the saved concepts to update the graph
@@ -65,6 +63,21 @@ class MemoryStore:
                         self.graph[concept1][concept2]['weight'] += 1
                     else:
                         self.graph.add_edge(concept1, concept2, weight=1)
+
+    def cleanup_interaction(self, interaction):
+        concepts_remaining = set([m.concepts for m in self.short_term_memory if m.forget == False]).union(set([m.concepts for m in self.long_term_memory]))
+        # Check the concepts of the interaction about to be removed
+        for concept in interaction.concepts:
+            if concept not in concepts_remaining:
+                # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
+                self.graph.remove_node(concept)
+        # Remove the interaction from the clusters
+        for label, interactions in self.semantic_memory.items():
+            for clustered_interaction in interactions:
+                if clustered_interaction[1] == interaction:
+                    interactions.remove(clustered_interaction)
+                    if len(interactions) == 0:
+                        self.cluster_labels.pop(label)
 
     def retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
@@ -95,6 +108,11 @@ class MemoryStore:
 
         # Update interaction access
         self.update_interactions(relevant_interactions, current_time, exclude_last_n)
+
+        # Delete the interactions marked for deletion
+        to_delete = {idx:interaction for idx, interaction in enumerate(self.short_term_memory) if interaction.forget is True}
+        map(self.cleanup_interaction, to_delete.values())
+        self.short_term_memory = list(filter(lambda x: x in to_delete.keys(), self.short_term_memory))
 
         # Spreading activation
         activated_concepts = self.spreading_activation(query_concepts)

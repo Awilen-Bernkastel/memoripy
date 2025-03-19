@@ -20,7 +20,7 @@ setup(
         "certifi",
         "charset-normalizer",
         "distro",
-        "faiss-cpu",
+        # "faiss-cpu",
         "frozenlist",
         "h11",
         "httpcore",
