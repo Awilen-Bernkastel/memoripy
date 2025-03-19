@@ -22,7 +22,7 @@ class MemoryStore:
         self.semantic_memory = defaultdict(list)  # Semantic memory clusters
         self.cluster_labels = []     # Labels for each interaction's cluster
 
-    def add_interaction(self, interaction):
+    def add_interaction(self, interaction: InteractionData):
         im = InteractionData()
         im.id = interaction['id']
         im.prompt = interaction['prompt']
