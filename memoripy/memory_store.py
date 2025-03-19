@@ -23,33 +23,23 @@ class MemoryStore:
         self.cluster_labels = []     # Labels for each interaction's cluster
 
     def add_interaction(self, interaction: InteractionData):
-        im = InteractionData()
-        im.id = interaction['id']
-        im.prompt = interaction['prompt']
-        im.output = interaction['output']
-        im.embedding = np.array(interaction['embedding']).reshape(1, -1)
-        im.timestamp = interaction.get('timestamp', time.time())  # Use current time if 'timestamp' is missing
-        im.access_count = interaction.get('access_count', 1)
-        im.concepts = set(interaction.get('concepts', []))
-        im.decay_factor = interaction.get('decay_factor', 1.0)
+        # Reshape the embedding if necessary
+        interaction.embedding = np.array(interaction.embedding).reshape(1, -1)
 
         logging.info(f"Adding new interaction to short-term memory: '{interaction['prompt']}'")
         # Save the interaction data to short-term memory
-        self.short_term_memory.append(im)
+        self.short_term_memory.append(interaction)
 
         # Add the embedding to the index
         # self.index.add(im.embedding)
 
         # Update graph with bidirectional associations
-        self.update_graph(im.concepts)
+        self.update_graph(interaction.concepts)
 
         # Update clusters with new interaction
-        self.update_clusters(im)
+        self.cluster_interactions()
 
         logging.info(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
-        
-    def update_clusters(interaction):
-        pass
 
     def update_graph(self, concepts):
         # Use the saved concepts to update the graph
@@ -189,6 +179,7 @@ class MemoryStore:
         logging.info("Clustering interactions to create hierarchical memory...")
         if len(self.short_term_memory) < 2:
             logging.info("Not enough interactions to perform clustering.")
+            self.semantic_memory = {}
             return
 
         embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory if im.forget is False])
@@ -197,9 +188,7 @@ class MemoryStore:
         self.cluster_labels = kmeans.labels_
 
         # Build semantic memory clusters
-        for idx, label in enumerate(self.cluster_labels):
-            im = self.short_term_memory[idx]
-            self.semantic_memory[label].append((im.embedding, im))
+        self.semantic_memory = {label: [im for im in self.short_term_memory if im.forget is False and im.label == label] for label in set(self.cluster_labels)}
 
         logging.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 

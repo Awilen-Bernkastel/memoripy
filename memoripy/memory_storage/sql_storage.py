@@ -94,7 +94,7 @@ class SQLStorage(BaseStorage):
                 for concept in list(memory.concepts):
                     new_interaction.concepts.append(Concept(concept=concept))
                 self.owner.memories.append(new_interaction)
-    
+
     def _save_long_term_memory(self, memory_store):
         # Any memory that will go long-term has been registered as a short-term memory to begin with.
         dict_memory = {m.uuid:m for m in self.owner.memories}

@@ -79,14 +79,14 @@ class MemoryManager:
         timestamp = time.time()
         interaction_id = str(uuid.uuid4())
         interaction = InteractionData(
-            id= interaction_id,
-            prompt= prompt,
-            output= output,
-            embedding= embedding.tolist(),
-            timestamp= timestamp,
-            access_count= 1,
-            concepts= [str(concept) for concept in concepts], # Prevent the "unhashable type: 'dict'" error
-            decay_factor= 1.0,
+            id=interaction_id,
+            prompt=prompt,
+            output=output,
+            embedding=embedding.tolist(),
+            timestamp=timestamp,
+            access_count=1,
+            concepts=[str(concept) for concept in concepts], # Prevent the "unhashable type: 'dict'" error
+            decay_factor=1.0,
         )
         self.memory_store.add_interaction(interaction)
         self.save_memory_to_history()
