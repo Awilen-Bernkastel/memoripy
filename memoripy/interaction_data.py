@@ -23,7 +23,7 @@ class InteractionData:
 
     def __setitem__(self, key, value):
         setattr(self, key, value)
-    
+
     def get(self, key, default_value=None):
         try:
             return getattr(self, key)
