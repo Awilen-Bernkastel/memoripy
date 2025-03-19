@@ -14,7 +14,7 @@
 
 - **Hierarchical Clustering**: Clusters similar memories into semantic groups to aid in contextually relevant retrieval.
 
-- **Decay and Reinforcement**: Older memories decay over time, while frequently accessed memories are reinforced.
+- **Decay and Reinforcement**: Older less accessed memories decay over time and forgotten eventually, while frequently accessed memories are reinforced and persisted eventually.
 
 ## Installation
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     main()
 
 ```
-## Classes and Modules
+### Classes and Modules
 - `MemoryManager`: Manages memory interactions, retrieves relevant information, and generates responses based on past interactions.
 
 - `MemoryStore`: Stores and organizes interactions in short-term and long-term memory, with support for clustering and retrieval based on relevance.
@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
 4. **Generate Response**: Combine the current prompt and retrieved interactions to generate a contextually relevant response.
 
-5. **Decay and Reinforcement**: Increase decay on unused memories and reinforce frequently accessed memories.
+5. **Decay and Reinforcement**: Increase decay on unused memories and reinforce frequently accessed memories. Severely decayed memories are deleted/forgotten.
 
 ## Requirements
 Memoripy relies on several dependencies, including:
