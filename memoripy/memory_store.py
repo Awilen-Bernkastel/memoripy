@@ -43,6 +43,15 @@ class MemoryStore:
         self.update_graph(im.concepts)
 
         logging.info(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
+    
+    def remove_interaction(self, interaction):
+        concepts_remaining = set([m.concepts for m in self.short_term_memory if m.forget == False]).union(set([m.concepts for m in self.long_term_memory]))
+        # Check the concepts of the interaction about to be removed
+        for concept in interaction.concepts:
+            if concept not in concepts_remaining:
+                # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
+                self.graph.remove_node(concept)
+        # Remove the interaction from the clusters
 
     def update_graph(self, concepts):
         # Use the saved concepts to update the graph
@@ -72,43 +81,20 @@ class MemoryStore:
 
         # Calculate adjusted similarity for each interaction
         if len(self.short_term_memory) > exclude_last_n:
-            for im in self.short_term_memory[:-exclude_last_n]:
-                similarity = cosine_similarity(query_embedding_norm, im.normalize_embedding())[0][0] * 100
-                time_diff = current_time - im.timestamp
-                im.decay_factor = im.get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
-                reinforcement_factor = np.log1p(im.access_count)
-                adjusted_similarity = similarity * im.decay_factor * reinforcement_factor
-                logging.info(f"Interaction {im.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
+            for interaction in self.short_term_memory[:-exclude_last_n]:
+                similarity = cosine_similarity(query_embedding_norm, interaction.normalize_embedding())[0][0] * 100
+                time_diff = current_time - interaction.last_accessed
+                interaction.decay_factor = interaction.get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
+                reinforcement_factor = np.log1p(interaction.access_count)
+                adjusted_similarity = similarity * interaction.decay_factor * reinforcement_factor
+                logging.info(f"Interaction {interaction.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
 
                 if adjusted_similarity >= similarity_threshold:
-                    # Update access count and timestamp for relevant interactions
-                    im.access_count += 1
-                    im.timestamp = current_time
-                    logging.debug(f"Updated access count for interaction {im.id}: {im.access_count}")
-
-                    # Move interaction to long-term memory if access count exceeds 10
-                    if im.access_count > 10 and im not in self.long_term_memory:
-                        self.long_term_memory.append(im)
-                        logging.info(f"Moved interaction {im.id} to long-term memory.")
-
-                    # Increase decay factor for relevant interaction
-                    im.decay_factor *= 1.1  # Increase by 10% or adjust as needed
-
                     # Add to the list of relevant interactions
-                    relevant_interactions.append((adjusted_similarity, im))
-                else:
-                    logging.debug(f"Interaction {im.id} was not relevant (similarity: {adjusted_similarity:.2f}%).")
-                    # Apply decay for non-relevant interactions
-                    im.decay_factor *= 0.9
-                    # Mark for forgetting
-                    if im not in self.long_term_memory and im.decay_factor < 0.1:
-                        im.forget = True
-                        concepts_remaining = set([m.concepts for m in self.short_term_memory if m.forget == False]).union(set([m.concepts for m in self.long_term_memory]))
-                        # Check the concepts of the interaction about to be removed
-                        for concept in im.concepts:
-                            if concept not in concepts_remaining:
-                                # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
-                                self.graph.remove_node(concept)
+                    relevant_interactions.append((adjusted_similarity, interaction))
+
+        # Update interaction access
+        self.update_interactions(relevant_interactions, current_time, exclude_last_n)
 
         # Spreading activation
         activated_concepts = self.spreading_activation(query_concepts)
@@ -131,6 +117,30 @@ class MemoryStore:
 
         logging.info(f"Retrieved {len(final_interactions)} relevant interactions from memory.")
         return final_interactions
+
+    def update_interactions(self, relevant_interactions, current_time, exclude_last_n):
+        # Update access count and timestamp for relevant interactions
+        if len(self.short_term_memory) > exclude_last_n:
+            ri = [r[1] for r in relevant_interactions]
+            for im in self.short_term_memory[:-exclude_last_n]:
+                if im in ri:
+                    im.access_count += 1
+                    im.last_accessed = current_time
+                    logging.debug(f"Updated access count for interaction {im.id}: {im.access_count}")
+
+                    # Move interaction to long-term memory if access count exceeds 10
+                    if im.access_count > 10 and im not in self.long_term_memory:
+                        self.long_term_memory.append(im)
+                        logging.info(f"Moved interaction {im.id} to long-term memory.")
+
+                        # Increase decay factor for relevant interaction
+                        im.decay_factor *= 1.1  # Increase by 10% or adjust as needed
+                else:
+                    # Apply decay for non-relevant interactions
+                    im.decay_factor *= 0.9
+                    # Mark for forgetting
+                    if im not in self.long_term_memory and im.decay_factor < 0.1:
+                        im.forget = True
 
     def spreading_activation(self, query_concepts):
         logging.info("Spreading activation for concept associations...")
@@ -163,7 +173,7 @@ class MemoryStore:
             logging.info("Not enough interactions to perform clustering.")
             return
 
-        embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory])
+        embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory if im.forget is False])
         num_clusters = min(10, len(self.short_term_memory))  # Adjust number of clusters based on the number of interactions
         kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
         self.cluster_labels = kmeans.labels_
