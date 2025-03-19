@@ -222,7 +222,7 @@ class MemoryStore:
         # Update access count for these retrieved interactions
         for interaction in semantic_interactions:
             interaction_id = interaction.id
-            idx = next((i for i, item in enumerate(self.short_term_memory) if item['id'] == interaction_id), None)
+            idx = next((i for i, item in enumerate(self.short_term_memory) if item.id == interaction_id), None)
             if idx is not None:
                 im = self.short_term_memory[idx]
                 im.timestamp = current_time
