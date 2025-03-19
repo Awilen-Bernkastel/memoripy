@@ -13,8 +13,8 @@ from collections import defaultdict
 from .interaction_data import InteractionData
 
 class MemoryStore:
-    def __init__(self, dimension=1536):
-        self.dimension = dimension
+    def __init__(self): #, dimension=1536):
+        # self.dimension = dimension
         # self.index = faiss.IndexFlatL2(dimension)
         self.short_term_memory = []  # Short-term memory interactions
         self.long_term_memory = []   # Long-term memory interactions
