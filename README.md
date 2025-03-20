@@ -68,10 +68,13 @@ def main():
     relevant_interactions = memory_manager.retrieve_relevant_interactions(new_prompt, exclude_last_n=5)
 
     # Generate a response using the last interactions and retrieved interactions
-    response = memory_manager.generate_response(new_prompt, last_interactions, relevant_interactions)
+    chunked_response = memory_manager.generate_response(new_prompt, last_interactions, relevant_interactions)
 
-    # Display the response
-    print(f"Generated response:\n{response}")
+    # Display de response as it is being generated
+    for chunk in chunked_response:
+        print(chunk.content, end="", flush=True)
+        # no need to add spaces, they are in the chunks
+        response += str(chunk.content)
 
     # Extract concepts for the new interaction
     combined_text = f"{new_prompt} {response}"
@@ -96,7 +99,7 @@ if __name__ == "__main__":
 
 - `InteractionData`: memory object (replaces the various dicts and lists in MemoryStore.)
 
-##Core Functionalities
+## Core Functionalities
 1. **Initialize Memory**: Load previous interactions from the chosen storage and initialize memory.
 
 2. **Add Interaction**: Store a new interaction with its embedding, concepts, prompt, and output.
@@ -112,8 +115,6 @@ Memoripy relies on several dependencies, including:
 
 - `openai`
 
-- `faiss-cpu`
-
 - `numpy`
 
 - `networkx`
@@ -125,6 +126,8 @@ Memoripy relies on several dependencies, including:
 - `ollama`
 
 These dependencies will be installed automatically with pip install memoripy.
+
+Work is in progress to include `faiss-cpu` as an optional dependency for similarity search.
 
 ## License
 Memoripy is licensed under the Apache 2.0 License.
