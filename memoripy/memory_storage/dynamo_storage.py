@@ -81,7 +81,6 @@ class LongTermMemoryAttr(MapAttribute):
     last_accessed = NumberAttribute()
     access_count = NumberAttribute()
     decay_factor = NumberAttribute()
-    total_score = NumberAttribute()
 
 class LongTermMemory(BaseModel):
     id: str
@@ -91,7 +90,6 @@ class LongTermMemory(BaseModel):
     access_count: int
     last_accessed: float
     decay_factor: float
-    total_score: float
 
     def get(self, key, default):
         return getattr(self, key, default)
@@ -112,7 +110,6 @@ class LongTermMemory(BaseModel):
             last_accessed=attr.last_accessed,
             access_count=int(attr.access_count),
             decay_factor=attr.decay_factor,
-            total_score=attr.total_score,
         )
 
 class Memory(Model):

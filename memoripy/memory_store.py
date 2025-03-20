@@ -102,7 +102,6 @@ class MemoryStore:
         for score, interaction in relevant_interactions:
             activation_score = sum([activated_concepts.get(c, 0) for c in interaction.concepts])
             total_score = score + activation_score
-            interaction.total_score = total_score
             final_interactions.append((total_score, interaction))
 
         # Sort interactions based on total_score

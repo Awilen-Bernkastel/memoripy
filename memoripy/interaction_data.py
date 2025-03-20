@@ -15,7 +15,6 @@ class InteractionData:
         self.decay_factor = None
         self.concepts = None
         self.normalized_embedding = None
-        self.total_score = None
 
     def __getitem__(self, key):
         return getattr(self, key)
