@@ -1,7 +1,6 @@
 # memory_store.py
 # Apache 2.0 license, Modified by Awilen Bernkastel
 
-# import faiss
 import logging
 import numpy as np
 import time
@@ -13,11 +12,10 @@ from collections import defaultdict
 from .interaction_data import InteractionData
 
 class MemoryStore:
-    def __init__(self): #, dimension=1536):
-        # self.dimension = dimension
-        # self.index = faiss.IndexFlatL2(dimension)
+    def __init__(self):
         self.short_term_memory = []  # Short-term memory interactions
         self.long_term_memory = []   # Long-term memory interactions
+        self.decayed_memory = []     # Short-term memory ready for forgetting
         self.graph = nx.Graph()      # Graph for bidirectional associations
         self.semantic_memory = defaultdict(list)  # Semantic memory clusters
         self.cluster_labels = []     # Labels for each interaction's cluster
@@ -29,9 +27,6 @@ class MemoryStore:
         logging.info(f"Adding new interaction to short-term memory: '{interaction['prompt']}'")
         # Save the interaction data to short-term memory
         self.short_term_memory.append(interaction)
-
-        # Add the embedding to the index
-        # self.index.add(im.embedding)
 
         # Update graph with bidirectional associations
         self.update_graph(interaction.concepts)
@@ -54,20 +49,13 @@ class MemoryStore:
                     else:
                         self.graph.add_edge(concept1, concept2, weight=1)
 
-    def cleanup_interaction(self, interaction):
-        concepts_remaining = set([m.concepts for m in self.short_term_memory if m.forget == False]).union(set([m.concepts for m in self.long_term_memory]))
-        # Check the concepts of the interaction about to be removed
-        for concept in interaction.concepts:
-            if concept not in concepts_remaining:
-                # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
-                self.graph.remove_node(concept)
-        # Remove the interaction from the clusters
-        for label, interactions in self.semantic_memory.items():
-            for clustered_interaction in interactions:
-                if clustered_interaction[1] == interaction:
-                    interactions.remove(clustered_interaction)
-                    if len(interactions) == 0:
-                        self.cluster_labels.pop(label)
+    def cleanup_concepts(self):
+        concepts_potentially_to_remove = set([m.concepts for m in self.decayed_memory])
+        concepts_remaining = set([m.concepts for m in self.short_term_memory]).union(set([m.concepts for m in self.long_term_memory]))
+        concepts_to_remove = list(filter(lambda x: x in concepts_remaining, concepts_potentially_to_remove))
+        for concept in concepts_to_remove:
+            # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
+            self.graph.remove_node(concept)
 
     def retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
@@ -99,10 +87,12 @@ class MemoryStore:
         # Update interaction access
         self.update_interactions(relevant_interactions, current_time, exclude_last_n)
 
-        # Delete the interactions marked for deletion
-        to_delete = {idx:interaction for idx, interaction in enumerate(self.short_term_memory) if interaction.forget is True}
-        map(self.cleanup_interaction, to_delete.values())
-        self.short_term_memory = list(filter(lambda x: x in to_delete.keys(), self.short_term_memory))
+        if self.decayed_memory:
+            self.cleanup_concepts()
+            # Filter the interactions marked for deletion
+            self.short_term_memory = list(filter(lambda x: x in self.decayed_memory, self.short_term_memory))
+            # Recluster interactions
+            self.cluster_interactions()
 
         # Spreading activation
         activated_concepts = self.spreading_activation(query_concepts)
@@ -127,6 +117,7 @@ class MemoryStore:
         return final_interactions
 
     def update_interactions(self, relevant_interactions, current_time, exclude_last_n):
+        self.decayed_memory = []
         # Update access count and timestamp for relevant interactions
         if len(self.short_term_memory) > exclude_last_n:
             ri = [r[1] for r in relevant_interactions]
@@ -148,7 +139,9 @@ class MemoryStore:
                     im.decay_factor *= 0.9
                     # Mark for forgetting
                     if im not in self.long_term_memory and im.decay_factor < 0.1:
-                        im.forget = True
+                        self.decayed_memory.append(im)
+        for im in self.decayed_memory:
+            self.short_term_memory.pop(im)
 
     def spreading_activation(self, query_concepts):
         logging.info("Spreading activation for concept associations...")
@@ -182,13 +175,13 @@ class MemoryStore:
             self.semantic_memory = {}
             return
 
-        embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory if im.forget is False])
+        embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory])
         num_clusters = min(10, len(self.short_term_memory))  # Adjust number of clusters based on the number of interactions
         kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
         self.cluster_labels = kmeans.labels_
 
         # Build semantic memory clusters
-        self.semantic_memory = {label: [im for im in self.short_term_memory if im.forget is False and im.label == label] for label in set(self.cluster_labels)}
+        self.semantic_memory = {label: [im for im in self.short_term_memory if im.label == label] for label in set(self.cluster_labels)}
 
         logging.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 
@@ -225,9 +218,48 @@ class MemoryStore:
             idx = next((i for i, item in enumerate(self.short_term_memory) if item.id == interaction_id), None)
             if idx is not None:
                 im = self.short_term_memory[idx]
-                im.timestamp = current_time
+                im.last_accessed = current_time
                 im.access_count += 1
                 logging.debug(f"Updated access count for interaction {interaction_id}: {im.access_count}")
 
         logging.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
         return semantic_interactions
+
+try:
+    import os
+    os.environ['USE_FAISS']
+except KeyError:
+    pass
+else:
+    try:
+        import faiss
+    except ImportError:
+        print("Error: USE_FAISS is set, but faiss-cpu is not installed. You can install it with 'pip install faiss-cpu'.")
+        print("If pip compiles faiss-cpu from source, the source package assumes faiss is already built and installed on the system.")
+        print("Read more at https://github.com/kyamagu/faiss-wheels")
+        exit(1)
+
+    __memory_store___init__ = MemoryStore.__init__
+    def __memory_store_faiss___init__(self, dimension=1536):
+        __memory_store___init__(self)
+        self.dimension = dimension
+        self.index = faiss.IndexFlatL2(dimension)
+
+    __memory_store_add_interaction = MemoryStore.add_interaction
+    def __memory_store_faiss_add_interaction(self, interaction: InteractionData):
+        __memory_store_add_interaction(interaction)
+        self.index.add(interaction.embedding)
+
+    def __memory_store_faiss_retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
+        raise NotImplementedError("The FAISS-based retrieval method isn't implemented yet.")
+    def __memory_store_faiss_retrieve_from_semantic_memory(self, query_embedding_norm):
+        raise NotImplementedError("The FAISS-based retrieval from semantic memory method isn't implemented yet.")
+    def __memory_store_faiss_cluster_interactions(self):
+        raise NotImplementedError("The FAISS-based clustering method isn't implemented yet.")
+
+    # Monkey-patch faiss in MemoryStore for speed
+    MemoryStore.__init__                        = __memory_store_faiss___init__
+    MemoryStore.add_interaction                 = __memory_store_faiss_add_interaction
+    MemoryStore.retrieve                        = __memory_store_faiss_retrieve
+    MemoryStore.retrieve_from_semantic_memory   = __memory_store_faiss_retrieve_from_semantic_memory
+    MemoryStore.cluster_interactions            = __memory_store_faiss_cluster_interactions

@@ -33,7 +33,7 @@ class JSONStorage(BaseStorage):
 
     def save_memory_to_history(self, memory_store):
         history = {
-            "short_term_memory": [self._serialize_interaction(m) for m in memory_store.short_term_memory if m.forget is False],
+            "short_term_memory": [self._serialize_interaction(m) for m in memory_store.short_term_memory],
             "long_term_memory": [self._serialize_interaction(m) for m in memory_store.long_term_memory]
         }
         with open(self.file_path + "~", 'w+') as f:

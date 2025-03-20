@@ -7,9 +7,8 @@
 
 import logging
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from sqlalchemy.schema import MetaData
 from ..interaction_data import InteractionData
 
 from .sql_storage_models import MemoryOwner, Memory, Base, Embedding, Concept
@@ -74,10 +73,6 @@ class SQLStorage(BaseStorage):
         interaction_ids = set(memory.id for memory in self.history["short_term_memory"])
         dict_memory = {m.uuid:m for m in self.owner.memories}
         for memory in memory_store.short_term_memory:
-            # Short-term memory deletion
-            if memory.forget == True and memory.is_long_term == False:
-                self.owner.memories.remove(dict_memory[memory.id])
-                continue
             if memory.id not in interaction_ids:
                 new_interaction = Memory(
                     uuid=memory.id,
@@ -94,6 +89,12 @@ class SQLStorage(BaseStorage):
                 for concept in list(memory.concepts):
                     new_interaction.concepts.append(Concept(concept=concept))
                 self.owner.memories.append(new_interaction)
+
+        # Remove decayed interactions
+        for memory in memory_store.decayed_memory:
+            if memory.id in dict_memory:
+                memory_index = self.owner.memories.index([x for x in self.owner.memories if x.uuid == memory.id][0])
+                self.owner.memories.pop(memory_index)
 
     def _save_long_term_memory(self, memory_store):
         # Any memory that will go long-term has been registered as a short-term memory to begin with.

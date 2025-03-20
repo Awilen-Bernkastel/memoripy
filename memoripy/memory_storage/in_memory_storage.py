@@ -23,7 +23,7 @@ class InMemoryStorage(BaseStorage):
         }
 
         # Save short-term memory interactions
-        for interaction in [m for m in memory_store.short_term_memory if m.forget is False]:
+        for interaction in [m for m in memory_store.short_term_memory]:
             self.history["short_term_memory"].append(interaction)
 
         # Save long-term memory interactions
