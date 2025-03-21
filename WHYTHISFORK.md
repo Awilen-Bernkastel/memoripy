@@ -30,6 +30,8 @@ Here's an unordered list of improvements I have brought:
 
 - **Timestamps are now included with each interaction** to give the LLM a sense of time.
 
+- **Custom prompts** that are chained before invoking the LLM.
+
 # Future developments
 
 - **Properly implement FAISS in.** This may take a while. The current model for implementation is to monkey-patch faiss-cpu in the MemoryStore class when new methods are implemented, instead of using "if" statements to check for USE_FAISS. Preferably, only the relevant parts of the non-FAISS code should be deported in new methods to be monkey-patched out with FAISS-enabled code.
