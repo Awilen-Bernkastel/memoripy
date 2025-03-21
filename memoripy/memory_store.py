@@ -246,7 +246,7 @@ else:
 
     __memory_store_add_interaction = MemoryStore.add_interaction
     def __memory_store_faiss_add_interaction(self, interaction: InteractionData):
-        __memory_store_add_interaction(interaction)
+        __memory_store_add_interaction(self, interaction)
         self.index.add(interaction.embedding)
 
     def __memory_store_faiss_retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
