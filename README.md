@@ -18,10 +18,30 @@
 
 ## Installation
 
-You can install Memoripy with pip:
+To install this fork of Memoripy, first retrieve a copy of the code and build its wheel (ensure you have the ```build``` package installed with ```pip install build```):
 
 ```bash
-pip install memoripy
+git clone https://github.com/Awilen-Bernkastel/memoripy.git
+cd memoripy
+python -m build .
+```
+
+Then in your project, install the newly-built wheel:
+
+```bash
+#Activate your virtual env if you have one
+
+#Bash
+. ./venv/bin/activate
+
+#Powershell
+./venv/Scripts/Activate.psh
+
+#Command prompt
+./venv/Scripts/Activate.bat
+
+#Install the wheel
+pip install /path/to/memoripy/dist/memoripy-0.1.2-py3-none-any.whl
 ```
 
 ## Usage
