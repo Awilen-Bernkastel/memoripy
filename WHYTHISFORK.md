@@ -36,7 +36,7 @@ Here's an unordered list of improvements I have brought:
 
 # Future developments
 
-- **Properly implement FAISS in.** This may take a while. The current model for implementation is to monkey-patch faiss-cpu in the MemoryStore class when new methods are implemented, instead of using "if" statements to check for USE_FAISS. Preferably, only the relevant parts of the non-FAISS code should be deported in new methods to be monkey-patched out with FAISS-enabled code.
+- **Properly implement FAISS in.** This may take a while. The current model for implementation is to use an entirely different file for the FAISS-enabled MemoryStore class.
 
 - **Caching recurring results.** In the OllamaChatModel, the SYSTEM prompt should be cached somehow, and this would accelerate the processing significantly instead of rehashing the same SYSTEM prompt for every interaction.
 
