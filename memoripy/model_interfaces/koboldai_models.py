@@ -10,6 +10,8 @@ from .model import ChatModel, EmbeddingModel
 from ..memory_manager import ConceptExtractionResponse
 from langchain_core.runnables.utils import Output
 
+logger = logging.getLogger("memoripy")
+
 class KoboldAiChatModel(ChatModel):
     def __init__(self, api_key=None, model_name="llama3.1:8b", endpoint="http://localhost:5000"):
         self.api_key = api_key
@@ -52,7 +54,7 @@ class KoboldAiChatModel(ChatModel):
         chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
-        logging.info(f"Concepts extracted: {concepts}")
+        logger.info(f"Concepts extracted: {concepts}")
         self.llm.temperature = old_temperature
         return concepts
 

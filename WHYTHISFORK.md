@@ -32,6 +32,8 @@ Here's an unordered list of improvements I have brought:
 
 - **Custom prompts** that are chained before invoking the LLM.
 
+- **Logging** is now done with the ```logging``` module rather than using print, with the "memoripy" logger.
+
 # Future developments
 
 - **Properly implement FAISS in.** This may take a while. The current model for implementation is to monkey-patch faiss-cpu in the MemoryStore class when new methods are implemented, instead of using "if" statements to check for USE_FAISS. Preferably, only the relevant parts of the non-FAISS code should be deported in new methods to be monkey-patched out with FAISS-enabled code.
@@ -42,6 +44,6 @@ Here's an unordered list of improvements I have brought:
 
 - **The koboldai/koboldcpp interface.** This model interface is supposedly faster and has a lot more features than Ollama. I'll also look into llamacpp as koboldcpp is derived from it. 
 
-- **Allow MemoryStore to hold the memories of more than one "Owner"** and choose which one to "talk through" for each interaction.
+- **Allow MemoryStore to hold the memories of more than one "Memory Owner" at a time** and choose which one to "talk through" for each interaction.
 
 - **Improve the LLM's sense of time.** The current timestamp implementation is rather hit-or-miss at the moment.

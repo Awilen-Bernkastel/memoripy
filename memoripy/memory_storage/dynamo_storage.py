@@ -14,6 +14,8 @@ from pydantic import BaseModel, create_model
 from memoripy import BaseStorage
 from memoripy.memory_store import MemoryStore
 
+logger = logging.getLogger("memoripy")
+
 load_dotenv()
 
 def _get_host() -> str | None:
@@ -170,7 +172,7 @@ class DynamoStorage(BaseStorage):
             history.long_term_memory.append(interaction)
 
         history.save()
-        logging.info(f"Saved interaction history. Short-term: {len(history.short_term_memory)}, Long-term: {len(history.long_term_memory)}")
+        logger.info(f"Saved interaction history. Short-term: {len(history.short_term_memory)}, Long-term: {len(history.long_term_memory)}")
 
     @staticmethod
     def _attr_to_model(attr, model_class):

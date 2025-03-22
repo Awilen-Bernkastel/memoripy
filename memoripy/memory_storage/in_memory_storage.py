@@ -4,6 +4,8 @@
 import logging
 from .storage import BaseStorage
 
+logger = logging.getLogger("memoripy")
+
 class InMemoryStorage(BaseStorage):
     def __init__(self):
         self.history = {
@@ -12,11 +14,11 @@ class InMemoryStorage(BaseStorage):
         }
 
     def load_history(self):
-        logging.info("Loading history from in-memory storage.")
+        logger.info("Loading history from in-memory storage.")
         return self.history.get("short_term_memory", []), self.history.get("long_term_memory", [])
 
     def save_memory_to_history(self, memory_store):
-        logging.info("Saving history to in-memory storage.")
+        logger.info("Saving history to in-memory storage.")
         self.history = {
             "short_term_memory": [],
             "long_term_memory": []

@@ -11,6 +11,8 @@ from sklearn.preprocessing import normalize
 from collections import defaultdict
 from .interaction_data import InteractionData
 
+logger = logging .getLogger("memoripy")
+
 class MemoryStore:
     def __init__(self):
         self.short_term_memory = []  # Short-term memory interactions
@@ -18,13 +20,12 @@ class MemoryStore:
         self.decayed_memory = []     # Short-term memory ready for forgetting
         self.graph = nx.Graph()      # Graph for bidirectional associations
         self.semantic_memory = defaultdict(list)  # Semantic memory clusters
-        self.cluster_labels = []     # Labels for each interaction's cluster
 
     def add_interaction(self, interaction: InteractionData):
         # Reshape the embedding if necessary
         interaction.embedding = np.array(interaction.embedding).reshape(1, -1)
 
-        logging.info(f"Adding new interaction to short-term memory: '{interaction['prompt']}'")
+        logger.info(f"Adding new interaction to short-term memory: '{interaction['prompt']}'")
         # Save the interaction data to short-term memory
         self.short_term_memory.append(interaction)
 
@@ -34,7 +35,7 @@ class MemoryStore:
         # Update clusters with new interaction
         self.cluster_interactions()
 
-        logging.info(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
+        logger.info(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
 
     def update_graph(self, concepts):
         # Use the saved concepts to update the graph
@@ -59,10 +60,10 @@ class MemoryStore:
 
     def retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
-            logging.info("No interactions available in short-term memory for retrieval.")
+            logger.info("No interactions available in short-term memory for retrieval.")
             return []
 
-        logging.info("Retrieving relevant interactions from short-term memory...")
+        logger.info("Retrieving relevant interactions from short-term memory...")
         relevant_interactions = []
         current_time = time.time()
         decay_rate = 0.0001  # Adjust decay rate as needed
@@ -78,7 +79,7 @@ class MemoryStore:
                 interaction.decay_factor = interaction.get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
                 reinforcement_factor = np.log1p(interaction.access_count)
                 adjusted_similarity = similarity * interaction.decay_factor * reinforcement_factor
-                logging.info(f"Interaction {interaction.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
+                logger.info(f"Interaction {interaction.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
 
                 if adjusted_similarity >= similarity_threshold:
                     # Add to the list of relevant interactions
@@ -112,7 +113,7 @@ class MemoryStore:
         semantic_interactions = self.retrieve_from_semantic_memory(query_embedding_norm)
         final_interactions.extend(semantic_interactions)
 
-        logging.info(f"Retrieved {len(final_interactions)} relevant interactions from memory.")
+        logger.info(f"Retrieved {len(final_interactions)} relevant interactions from memory.")
         return final_interactions
 
     def update_interactions(self, relevant_interactions, current_time, exclude_last_n):
@@ -124,12 +125,12 @@ class MemoryStore:
                 if im in ri:
                     im.access_count += 1
                     im.last_accessed = current_time
-                    logging.debug(f"Updated access count for interaction {im.id}: {im.access_count}")
+                    logger.debug(f"Updated access count for interaction {im.id}: {im.access_count}")
 
                     # Move interaction to long-term memory if access count exceeds 10
                     if im.access_count > 10 and im not in self.long_term_memory:
                         self.long_term_memory.append(im)
-                        logging.info(f"Moved interaction {im.id} to long-term memory.")
+                        logger.info(f"Moved interaction {im.id} to long-term memory.")
 
                         # Increase decay factor for relevant interaction
                         im.decay_factor *= 1.1  # Increase by 10% or adjust as needed
@@ -143,7 +144,7 @@ class MemoryStore:
             self.short_term_memory.pop(im)
 
     def spreading_activation(self, query_concepts):
-        logging.info("Spreading activation for concept associations...")
+        logger.info("Spreading activation for concept associations...")
         activated_nodes = {}
         initial_activation = 1.0
         decay_factor = 0.5  # How much the activation decays each step
@@ -164,28 +165,27 @@ class MemoryStore:
                             new_activated_nodes[neighbor] = new_activated_nodes.get(neighbor, 0) + new_activation
             activated_nodes.update(new_activated_nodes)
 
-        logging.info(f"Concepts activated after spreading: {activated_nodes}")
+        logger.info(f"Concepts activated after spreading: {activated_nodes}")
         return activated_nodes
 
     def cluster_interactions(self):
-        logging.info("Clustering interactions to create hierarchical memory...")
+        logger.info("Clustering interactions to create hierarchical memory...")
         if len(self.short_term_memory) < 2:
-            logging.info("Not enough interactions to perform clustering.")
+            logger.info("Not enough interactions to perform clustering.")
             self.semantic_memory = {}
             return
 
         embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory])
         num_clusters = min(10, len(self.short_term_memory))  # Adjust number of clusters based on the number of interactions
         kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
-        self.cluster_labels = kmeans.labels_
 
         # Build semantic memory clusters
-        self.semantic_memory = {label: [im for im in self.short_term_memory if im.label == label] for label in set(self.cluster_labels)}
+        self.semantic_memory = {label: [im for im in self.short_term_memory if im.label == label] for label in set(kmeans.labels_)}
 
-        logging.info(f"Clustering completed. Total clusters formed: {num_clusters}")
+        logger.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 
     def retrieve_from_semantic_memory(self, query_embedding_norm):
-        logging.info("Retrieving interactions from semantic memory...")
+        logger.info("Retrieving interactions from semantic memory...")
         current_time = time.time()
         # Find the cluster closest to the query
         cluster_similarities = {}
@@ -201,7 +201,7 @@ class MemoryStore:
         if not cluster_similarities:
             return []
         best_cluster_label = max(cluster_similarities, key=cluster_similarities.get)
-        logging.info(f"Best matching cluster identified: {best_cluster_label}")
+        logger.info(f"Best matching cluster identified: {best_cluster_label}")
 
         # Retrieve interactions from the best cluster
         cluster_items = self.semantic_memory[best_cluster_label]
@@ -219,46 +219,7 @@ class MemoryStore:
                 im = self.short_term_memory[idx]
                 im.last_accessed = current_time
                 im.access_count += 1
-                logging.debug(f"Updated access count for interaction {interaction_id}: {im.access_count}")
+                logger.debug(f"Updated access count for interaction {interaction_id}: {im.access_count}")
 
-        logging.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
+        logger.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
         return semantic_interactions
-
-try:
-    import os
-    os.environ['USE_FAISS']
-except KeyError:
-    pass
-else:
-    try:
-        import faiss
-    except ImportError:
-        print("Error: USE_FAISS is set, but faiss-cpu is not installed. You can install it with 'pip install faiss-cpu'.")
-        print("If pip compiles faiss-cpu from source, the source package assumes faiss is already built and installed on the system.")
-        print("Read more at https://github.com/kyamagu/faiss-wheels")
-        exit(1)
-
-    __memory_store___init__ = MemoryStore.__init__
-    def __memory_store_faiss___init__(self, dimension=1536):
-        __memory_store___init__(self)
-        self.dimension = dimension
-        self.index = faiss.IndexFlatL2(dimension)
-
-    __memory_store_add_interaction = MemoryStore.add_interaction
-    def __memory_store_faiss_add_interaction(self, interaction: InteractionData):
-        __memory_store_add_interaction(self, interaction)
-        self.index.add(interaction.embedding)
-
-    def __memory_store_faiss_retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
-        raise NotImplementedError("The FAISS-based retrieval method isn't implemented yet.")
-    def __memory_store_faiss_retrieve_from_semantic_memory(self, query_embedding_norm):
-        raise NotImplementedError("The FAISS-based retrieval from semantic memory method isn't implemented yet.")
-    def __memory_store_faiss_cluster_interactions(self):
-        raise NotImplementedError("The FAISS-based clustering method isn't implemented yet.")
-
-    # Monkey-patch faiss in MemoryStore for speed
-    MemoryStore.__init__                        = __memory_store_faiss___init__
-    MemoryStore.add_interaction                 = __memory_store_faiss_add_interaction
-    MemoryStore.retrieve                        = __memory_store_faiss_retrieve
-    MemoryStore.retrieve_from_semantic_memory   = __memory_store_faiss_retrieve_from_semantic_memory
-    MemoryStore.cluster_interactions            = __memory_store_faiss_cluster_interactions

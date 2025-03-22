@@ -9,6 +9,8 @@ from .model import ChatModel
 from ..memory_manager import ConceptExtractionResponse
 from langchain_core.runnables.utils import Output
 
+logger = logging.getLogger("memoripy")
+
 class ChatCompletionsModel(ChatModel):
     def __init__(self, api_endpoint: str, api_key: str, model_name: str):
         self.api_key = api_key
@@ -56,7 +58,7 @@ class ChatCompletionsModel(ChatModel):
         chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
-        logging.info(f"Concepts extracted: {concepts}")
+        logger.info(f"Concepts extracted: {concepts}")
         return concepts
 
 class OpenRouterChatModel(ChatCompletionsModel):

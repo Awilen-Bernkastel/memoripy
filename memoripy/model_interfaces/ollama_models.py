@@ -13,6 +13,8 @@ from .model import ChatModel, EmbeddingModel
 from ..memory_manager import ConceptExtractionResponse
 from langchain_core.runnables.utils import Output
 
+logger = logging.getLogger("memoripy")
+
 class OllamaChatModel(ChatModel):
     def __init__(self, model_name="llama3.1:8b", temperature=None):
         self.model_name = model_name
@@ -66,7 +68,7 @@ class OllamaChatModel(ChatModel):
                 concepts = response.get("concepts", [])
             except OutputParserException:
                 continue
-        logging.info(f"Concepts extracted: {concepts}")
+        logger.info(f"Concepts extracted: {concepts}")
         self.llm.temperature = old_temperature
         return concepts
 

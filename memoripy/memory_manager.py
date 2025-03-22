@@ -15,6 +15,7 @@ from .interaction_data import InteractionData
 class ConceptExtractionResponse(BaseModel):
     concepts: list[str] = Field(description="List of key concepts extracted from the text.")
 
+logger = logging.getLogger("memoripy")
 
 class MemoryManager:
     """
@@ -92,7 +93,7 @@ class MemoryManager:
         self.save_memory_to_history()
 
     def get_embedding(self, text: str) -> np.ndarray:
-        logging.info(f"Generating embedding for the provided text...")
+        logger.info(f"Generating embedding for the provided text...")
         embedding = self.embedding_model.get_embedding(text)
         if embedding is None:
             raise ValueError("Failed to generate embedding.")
@@ -100,7 +101,7 @@ class MemoryManager:
         return np.array(standardized_embedding).reshape(1, -1)
 
     def extract_concepts(self, text: str) -> list[str]:
-        logging.info("Extracting key concepts from the provided text...")
+        logger.info("Extracting key concepts from the provided text...")
         return self.chat_model.extract_concepts(text)
 
     def initialize_memory(self):
@@ -112,7 +113,7 @@ class MemoryManager:
         self.memory_store.long_term_memory.extend(long_term)
 
         self.memory_store.cluster_interactions()
-        logging.info(f"Memory initialized with {len(self.memory_store.short_term_memory)} interactions in short-term and {len(self.memory_store.long_term_memory)} in long-term.")
+        logger.info(f"Memory initialized with {len(self.memory_store.short_term_memory)} interactions in short-term and {len(self.memory_store.long_term_memory)} in long-term.")
 
     def retrieve_relevant_interactions(self, query: str, similarity_threshold=40, exclude_last_n=0) -> list:
         query_embedding = self.get_embedding(query)
@@ -126,7 +127,7 @@ class MemoryManager:
             retrieved_context_interactions = retrievals[:context_window]
             retrieved_context = "\n".join([f"({datetime.fromtimestamp(r["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')}) {self.prompt_elements["ltm_user"]}\
                                            {r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrieved_context_interactions])
-            logging.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
+            logger.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
             context += "\n" + retrieved_context
             context += self.prompt_elements["outro_ltm"]
 
@@ -134,11 +135,11 @@ class MemoryManager:
             context += self.prompt_elements["intro_stm"]
             context_interactions = last_interactions[-context_window:]
             context += "\n".join([f"({datetime.fromtimestamp(r["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')}) {self.prompt_elements["stm_user"]}{r['prompt']}\n{self.prompt_elements["stm_agent"]}{r['output']}" for r in context_interactions])
-            logging.info(f"Using the following last interactions as context for response generation:\n{context}")
+            logger.info(f"Using the following last interactions as context for response generation:\n{context}")
             context += self.prompt_elements["outro_stm"]
         elif context == self.prompt_elements["intro"]:
             context = self.prompt_elements["no_history"]
-            logging.info(context)
+            logger.info(context)
 
         if self.prompt_elements["outro"] != "":
             context += "\n" + self.prompt_elements["outro"]

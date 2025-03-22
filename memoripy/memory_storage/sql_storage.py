@@ -14,6 +14,8 @@ from ..interaction_data import InteractionData
 from .sql_storage_models import MemoryOwner, Memory, Base, Embedding, Concept
 from .storage import BaseStorage
 
+logger = logging.getLogger("memoripy")
+
 class SQLStorage(BaseStorage):
 
     def __init__(self, owner="Assistant", db="sqlite:///default.db", echo_sql=False):
@@ -67,7 +69,7 @@ class SQLStorage(BaseStorage):
             self._save_long_term_memory(memory_store)
             s.commit()
 
-        logging.info(f"Saved interaction history to SQL db. Short-term: {len(self.history['short_term_memory'])}, Long-term: {len(self.history['long_term_memory'])}")
+        logger.info(f"Saved interaction history to SQL db. Short-term: {len(self.history['short_term_memory'])}, Long-term: {len(self.history['long_term_memory'])}")
 
     def _save_short_term_memory(self, memory_store):
         interaction_ids = set(memory.id for memory in self.history["short_term_memory"])

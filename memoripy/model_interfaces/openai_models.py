@@ -10,6 +10,8 @@ from .model import ChatModel, EmbeddingModel
 from ..memory_manager import ConceptExtractionResponse
 from langchain_core.runnables.utils import Output
 
+logger = logging.getLogger("memoripy")
+
 class OpenAIChatModel(ChatModel):
     def __init__(self, api_key, model_name="gpt-3.5-turbo"):
         self.api_key = api_key
@@ -56,7 +58,7 @@ class OpenAIChatModel(ChatModel):
         chain = self.concept_extraction_prompt_template | self.llm | self.parser
         response = chain.invoke({"text": text})
         concepts = response.get("concepts", [])
-        logging.info(f"Concepts extracted: {concepts}")
+        logger.info(f"Concepts extracted: {concepts}")
         return concepts
 
 class OpenAIEmbeddingModel(EmbeddingModel):
