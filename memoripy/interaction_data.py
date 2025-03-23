@@ -32,3 +32,7 @@ class InteractionData:
         if self.normalized_embedding is None:
             self.normalized_embedding = normalize(self.embedding)
         return self.normalized_embedding
+
+    def update_decay_factor(self, factor):
+        self.decay_factor *= factor
+        return self.decay_factor

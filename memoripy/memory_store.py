@@ -73,17 +73,24 @@ class MemoryStore:
 
         # Calculate adjusted similarity for each interaction
         if len(self.short_term_memory) > exclude_last_n:
-            for interaction in self.short_term_memory[:-exclude_last_n]:
-                similarity = cosine_similarity(query_embedding_norm, interaction.normalize_embedding())[0][0] * 100
-                time_diff = current_time - interaction.last_accessed
-                interaction.decay_factor = interaction.get('decay_factor', 1.0) * np.exp(-decay_rate * time_diff)
-                reinforcement_factor = np.log1p(interaction.access_count)
-                adjusted_similarity = similarity * interaction.decay_factor * reinforcement_factor
-                logger.info(f"Interaction {interaction.id} - Adjusted similarity score: {adjusted_similarity:.2f}%")
 
-                if adjusted_similarity >= similarity_threshold:
-                    # Add to the list of relevant interactions
-                    relevant_interactions.append((adjusted_similarity, interaction))
+            temp_memory = self.short_term_memory[:-exclude_last_n]
+
+            # Extract by adjusted similarity
+            relevant_interactions = list(
+                filter(
+                    lambda x: x[0] < similarity_threshold,                                                      # Remove entries under the similarity threshold
+                    zip(                                                                                        # Build tuples of adjusted similarities and interactions
+                        [                                                                                       # Build the list of adjusted similarities for each interaction
+                            (cosine_similarity(query_embedding_norm, x.normalize_embedding())[0][0] * 100) *    # Cosine similarity
+                            np.log1p(x.access_count) *                                                          # reinforcement factor
+                            x.update_decay_factor(np.exp(-decay_rate * (current_time - x.last_accessed)))       # update decay factor as a side-effect
+                            for x in temp_memory
+                        ],
+                        temp_memory
+                    )
+                )
+            )
 
         # Update interaction access
         self.update_interactions(relevant_interactions, current_time, exclude_last_n)
