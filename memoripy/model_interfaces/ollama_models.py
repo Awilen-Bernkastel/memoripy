@@ -62,11 +62,15 @@ class OllamaChatModel(ChatModel):
         self.llm.temperature = 0
         chain = self.concept_extraction_prompt_template | self.llm | self.parser
         concepts = None
-        while concepts is None:
+        retries = 1
+        response = ""
+        while concepts is None or retries < 5:
             try:
                 response = chain.invoke({"text": text})
                 concepts = response.get("concepts", [])
             except OutputParserException:
+                retries += 1
+                logging.warning(f"Concepts not extracted, response obtained: {response}. Attempt number {retries}...")
                 continue
         logger.info(f"Concepts extracted: {concepts}")
         self.llm.temperature = old_temperature
