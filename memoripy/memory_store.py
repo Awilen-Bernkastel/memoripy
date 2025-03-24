@@ -1,6 +1,7 @@
 # memory_store.py
 # Apache 2.0 license, Modified by Awilen Bernkastel
 
+from itertools import combinations
 import logging
 import numpy as np
 import time
@@ -38,17 +39,11 @@ class MemoryStore:
         logger.info(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
 
     def update_graph(self, concepts):
-        # Use the saved concepts to update the graph
-        for concept in concepts:
-            self.graph.add_node(concept)
-        # Add edges between concepts (associations)
-        for concept1 in concepts:
-            for concept2 in concepts:
-                if concept1 != concept2:
-                    if self.graph.has_edge(concept1, concept2):
-                        self.graph[concept1][concept2]['weight'] += 1
-                    else:
-                        self.graph.add_edge(concept1, concept2, weight=1)
+        # Add edges between concepts (associations) (nodes are added to the graph if they don't exist)
+        for concept1, concept2 in combinations(concepts, concepts):
+            if concept1 == concept2:
+                continue
+            self.graph.add_edge(concept1, concept2, self.graph.get(concept1, {}).get(concept2, 1))
 
     def cleanup_concepts(self):
         concepts_potentially_to_remove = set([m.concepts for m in self.decayed_memory])
