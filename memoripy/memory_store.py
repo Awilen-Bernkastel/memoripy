@@ -40,7 +40,7 @@ class MemoryStore:
 
     def update_graph(self, concepts):
         # Add edges between concepts (associations) (nodes are added to the graph if they don't exist)
-        for concept1, concept2 in combinations(concepts, concepts):
+        for concept1, concept2 in combinations(concepts, 2):
             if concept1 == concept2:
                 continue
             self.graph.add_edge(concept1, concept2, self.graph.get(concept1, {}).get(concept2, 1))
