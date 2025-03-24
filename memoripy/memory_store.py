@@ -58,6 +58,14 @@ class MemoryStore:
             # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
             self.graph.remove_node(concept)
 
+    def adjusted_similarity(self, interaction, query_embedding_norm, decay_factor):
+        # Compute the cosine similarity
+        # Multiply by the reinforcement factor
+        # Multiply by the decay factor that's updated in the process
+        return (cosine_similarity(query_embedding_norm, interaction.normalize_embedding())[0][0] * 100) * \
+                np.log1p(interaction.access_count) * \
+                interaction.update_decay_factor(np.exp(-decay_factor))
+
     def retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
             logger.info("No interactions available in short-term memory for retrieval.")
@@ -77,16 +85,10 @@ class MemoryStore:
             temp_memory = self.short_term_memory[:-exclude_last_n]
 
             # Extract by adjusted similarity
-            relevant_interactions = list(
-                filter(
-                    lambda x: x[0] < similarity_threshold,                                                      # Remove entries under the similarity threshold
-                    zip(                                                                                        # Build tuples of adjusted similarities and interactions
-                        [                                                                                       # Build the list of adjusted similarities for each interaction
-                            (cosine_similarity(query_embedding_norm, x.normalize_embedding())[0][0] * 100) *    # Cosine similarity
-                            np.log1p(x.access_count) *                                                          # reinforcement factor
-                            x.update_decay_factor(np.exp(-decay_rate * (current_time - x.last_accessed)))       # update decay factor as a side-effect
-                            for x in temp_memory
-                        ],
+            relevant_interactions = list(                                                                                                           # Crystalize as a list
+                filter(lambda x: x[0] < similarity_threshold,                                                                                       # Filter out entries under the adjusted similarity threshold
+                    zip(                                                                                                                            # Build (adjusted similarity, interaction) tuples
+                        [self.adjusted_similarity(x, query_embedding_norm, (decay_rate * (current_time - x.last_accessed))) for x in temp_memory],  # Build the list of adjusted similarities for each interaction
                         temp_memory
                     )
                 )
