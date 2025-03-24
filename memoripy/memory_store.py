@@ -53,14 +53,6 @@ class MemoryStore:
             # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
             self.graph.remove_node(concept)
 
-    def adjusted_similarity(self, interaction, query_embedding_norm, decay_factor):
-        # Compute the cosine similarity
-        # Multiply by the reinforcement factor
-        # Multiply by the decay factor that's updated in the process
-        return (cosine_similarity(query_embedding_norm, interaction.normalize_embedding())[0][0] * 100) * \
-                np.log1p(interaction.access_count) * \
-                interaction.update_decay_factor(np.exp(-decay_factor))
-
     def retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
             logger.info("No interactions available in short-term memory for retrieval.")
@@ -69,7 +61,6 @@ class MemoryStore:
         logger.info("Retrieving relevant interactions from short-term memory...")
         relevant_interactions = []
         current_time = time.time()
-        decay_rate = 0.0001  # Adjust decay rate as needed
 
         # Normalize embeddings for cosine similarity
         query_embedding_norm = normalize(query_embedding)
@@ -80,10 +71,10 @@ class MemoryStore:
             temp_memory = self.short_term_memory[:-exclude_last_n]
 
             # Extract by adjusted similarity
-            relevant_interactions = list(                                                                                                           # Crystalize as a list
+            relevant_interactions = list(                                                                                                           # Cast to a list
                 filter(lambda x: x[0] < similarity_threshold,                                                                                       # Filter out entries under the adjusted similarity threshold
                     zip(                                                                                                                            # Build (adjusted similarity, interaction) tuples
-                        [self.adjusted_similarity(x, query_embedding_norm, (decay_rate * (current_time - x.last_accessed))) for x in temp_memory],  # Build the list of adjusted similarities for each interaction
+                        [x.adjusted_similarity(query_embedding_norm, current_time) for x in temp_memory],  # Build the list of adjusted similarities for each interaction
                         temp_memory
                     )
                 )
