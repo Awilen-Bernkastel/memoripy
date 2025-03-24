@@ -43,10 +43,18 @@ class MemoryStore:
         for concept1, concept2 in combinations(concepts, 2):
             if concept1 == concept2:
                 continue
-            self.graph.add_edge(concept1, concept2, self.graph.get_edge_data(concept1, concept2, {'weight:0'})['weight'] + 1)
+            self.graph.add_edge(concept1, concept2, weight=self.graph.get_edge_data(concept1, concept2, {'weight:0'})['weight'] + 1)
 
     def cleanup_concepts(self):
         concepts_potentially_to_remove = set([m.concepts for m in self.decayed_memory])
+        for concept in concepts_potentially_to_remove:
+            try:
+                edge_data = self.graph[concept]
+            except KeyError:
+                continue
+            for far_node in edge_data.keys():
+                self.graph[concept][far_node]['weight'] -= 1
+
         concepts_remaining = set([m.concepts for m in self.short_term_memory]).union(set([m.concepts for m in self.long_term_memory]))
         concepts_to_remove = list(filter(lambda x: x in concepts_remaining, concepts_potentially_to_remove))
         for concept in concepts_to_remove:
