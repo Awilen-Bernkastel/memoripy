@@ -82,9 +82,9 @@ class MemoryStore:
             temp_memory = self.short_term_memory[:-exclude_last_n]
 
             # Extract by adjusted similarity
-            relevant_interactions = list(                                                                                                           # Cast to a list
-                filter(lambda x: x[0] < similarity_threshold,                                                                                       # Filter out entries under the adjusted similarity threshold
-                    zip(                                                                                                                            # Build (adjusted similarity, interaction) tuples
+            relevant_interactions = list(                                                                  # Cast to a list
+                filter(lambda x: x[0] < similarity_threshold,                                              # Filter out entries under the adjusted similarity threshold
+                    zip(                                                                                   # Build (adjusted similarity, interaction) tuples
                         [x.adjusted_similarity(query_embedding_norm, current_time) for x in temp_memory],  # Build the list of adjusted similarities for each interaction
                         temp_memory
                     )
