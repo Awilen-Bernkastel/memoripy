@@ -76,19 +76,15 @@ class MemoryManager:
     def save_memory_to_history(self):
         self.storage.save_memory_to_history(self.memory_store)
 
-    def add_interaction(self, prompt: str, output: str, embedding: np.ndarray, concepts: list[str]):
+    # def add_interaction(self, prompt: str, output: str, embedding: np.ndarray, concepts: list[str]):
+    def add_interaction(self, interaction: InteractionData):
         timestamp = time.time()
-        interaction_id = str(uuid.uuid4())
-        interaction = InteractionData(
-            id=interaction_id,
-            prompt=prompt,
-            output=output,
-            embedding=embedding.tolist(),
-            timestamp=timestamp,
-            access_count=1,
-            concepts=[str(concept) for concept in concepts], # Prevent the "unhashable type: 'dict'" error
-            decay_factor=1.0,
-        )
+        interaction.id = str(uuid.uuid4())
+        interaction.timestamp = timestamp
+        interaction.last_accessed = timestamp
+        interaction.concepts = [str(concept) for concept in interaction.concepts]
+        interaction.access_count = 1
+        interaction.decay_factor = 1.0
         self.memory_store.add_interaction(interaction)
         self.save_memory_to_history()
 

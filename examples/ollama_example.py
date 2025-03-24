@@ -2,6 +2,7 @@
 
 import sys
 from memoripy import MemoryManager, SQLStorage, JSONStorage, InMemoryStorage
+from memoripy.interaction_data import InteractionData
 from memoripy.model_interfaces.ollama_models import OllamaChatModel, OllamaEmbeddingModel
 
 def main(prompt):
@@ -50,7 +51,15 @@ def main(prompt):
     print("Storing new interaction...")
     # Store this new interaction along with its embedding and concepts
     new_embedding = memory_manager.get_embedding(combined_text)
-    memory_manager.add_interaction(new_prompt, response, new_embedding, concepts)
+
+    interaction = InteractionData(
+        prompt=new_prompt,
+        output=response,
+        embedding=new_embedding,
+        concepts=concepts
+    )
+
+    memory_manager.add_interaction(interaction)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

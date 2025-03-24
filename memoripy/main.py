@@ -1,6 +1,7 @@
 # main.py
 
 import sys
+from memoripy.interaction_data import InteractionData
 from memory_manager import MemoryManager
 from .memory_storage.json_storage import JSONStorage
 from langchain_ollama import ChatOllama
@@ -50,7 +51,15 @@ def main(new_prompt):
 
     # Store this new interaction along with its embedding and concepts
     new_embedding = memory_manager.get_embedding(combined_text)
-    memory_manager.add_interaction(new_prompt, response, new_embedding, concepts)
+
+    interaction = InteractionData(
+        prompt=new_prompt,
+        output=response,
+        embedding=new_embedding,
+        concepts=concepts
+    )
+
+    memory_manager.add_interaction(interaction)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
