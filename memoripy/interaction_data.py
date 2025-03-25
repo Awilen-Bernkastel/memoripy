@@ -44,6 +44,6 @@ class InteractionData:
         # Compute the cosine similarity
         # Multiply by the reinforcement factor
         # Multiply by the decay factor that's updated in the process
-        return (cosine_similarity(query_embedding_norm, self.normalize_embedding())[0][0] * 100) * \
+        return (cosine_similarity(query_embedding_norm, self.normalize_embedding())[0][0]) * \
                 np.log1p(self.access_count) * \
                 self.update_decay_factor(np.exp(-decay_rate * (current_time - self.last_accessed)))

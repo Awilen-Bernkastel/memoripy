@@ -64,7 +64,7 @@ class MemoryStore:
             # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
             self.graph.remove_node(concept)
 
-    def retrieve(self, query_embedding, query_concepts, similarity_threshold=40, exclude_last_n=0):
+    def retrieve(self, query_embedding, query_concepts, similarity_threshold=0.4, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
             logger.info("No interactions available in short-term memory for retrieval.")
             return []
