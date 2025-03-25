@@ -111,12 +111,12 @@ class MemoryManager:
         self.memory_store.cluster_interactions()
         logger.info(f"Memory initialized with {len(self.memory_store.short_term_memory)} interactions in short-term and {len(self.memory_store.long_term_memory)} in long-term.")
 
-    def retrieve_relevant_interactions(self, query: str, similarity_threshold=40, exclude_last_n=0) -> list:
-        query_embedding = self.get_embedding(query)
-        query_concepts = self.extract_concepts(query)
-        return self.memory_store.retrieve(query_embedding, query_concepts, similarity_threshold, exclude_last_n=exclude_last_n)
+    def retrieve_relevant_interactions(self, interaction: InteractionData, similarity_threshold=0.4, exclude_last_n=0) -> list:
+        interaction.embedding = self.get_embedding(interaction.prompt)
+        interaction.concepts = self.extract_concepts(interaction.prompt)
+        return self.memory_store.retrieve(interaction, similarity_threshold, exclude_last_n=exclude_last_n)
 
-    def generate_response(self, prompt: str, last_interactions: list, retrievals: list, context_window=3, stream=True) -> str:
+    def generate_response(self, query_interaction: InteractionData, last_interactions: list, retrievals: list, context_window=3, stream=True) -> str:
         context = self.prompt_elements["intro"]
         if retrievals:
             context += self.prompt_elements["intro_ltm"]
@@ -142,9 +142,9 @@ class MemoryManager:
 
         messages = [
             SystemMessage(content=self.prompt_elements["system"]),
-            HumanMessage(content=f"{context}\n({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}){self.prompt_elements["prompt_intro"]}{prompt} {self.prompt_elements["response_intro"]}")
+            HumanMessage(content=f"{context}\n({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}){self.prompt_elements["prompt_intro"]}{query_interaction.prompt} {self.prompt_elements["response_intro"]}")
         ]
-        
+
         if stream:
             response = self.chat_model.stream(messages)
         else:
