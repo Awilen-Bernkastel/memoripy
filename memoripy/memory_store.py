@@ -43,6 +43,7 @@ class MemoryStore:
         for concept1, concept2 in combinations(concepts, 2):
             if concept1 == concept2:
                 continue
+            # Each node provides a weight of 1. Two nodes provide a weight of 2.
             self.graph.add_edge(concept1, concept2, weight=self.graph.get_edge_data(concept1, concept2, {'weight:0'})['weight'] + 2)
 
     def cleanup_concepts(self):
@@ -83,23 +84,13 @@ class MemoryStore:
 
             # Extract by adjusted similarity
             relevant_interactions = list(                                                                  # Cast to a list
-                filter(lambda x: x[0] < similarity_threshold,                                              # Filter out entries under the adjusted similarity threshold
+                filter(lambda x,_ : x < similarity_threshold,                                              # Filter out entries under the adjusted similarity threshold
                     zip(                                                                                   # Build (adjusted similarity, interaction) tuples
                         [x.adjusted_similarity(query_embedding_norm, current_time) for x in temp_memory],  # Build the list of adjusted similarities for each interaction
                         temp_memory
                     )
                 )
             )
-
-        # Update interaction access
-        self.update_interactions(relevant_interactions, current_time, exclude_last_n)
-
-        if self.decayed_memory:
-            self.cleanup_concepts()
-            # Filter the interactions marked for deletion
-            self.short_term_memory = list(filter(lambda x: x in self.decayed_memory, self.short_term_memory))
-            # Recluster interactions
-            self.cluster_interactions()
 
         # Spreading activation
         activated_concepts = self.spreading_activation(query_concepts)
@@ -117,7 +108,17 @@ class MemoryStore:
 
         # Retrieve from semantic memory
         semantic_interactions = self.retrieve_from_semantic_memory(query_embedding_norm)
-        final_interactions.extend(semantic_interactions)
+        list(set(final_interactions.extend(semantic_interactions)))
+
+        # Update interaction access
+        self.update_interactions(final_interactions, current_time, exclude_last_n)
+
+        if self.decayed_memory:
+            self.cleanup_concepts()
+            # Filter the interactions marked for deletion
+            self.short_term_memory = list(filter(lambda x: x in self.decayed_memory, self.short_term_memory))
+            # Recluster interactions
+            self.cluster_interactions()
 
         logger.info(f"Retrieved {len(final_interactions)} relevant interactions from memory.")
         return final_interactions
@@ -138,8 +139,8 @@ class MemoryStore:
                         self.long_term_memory.append(im)
                         logger.info(f"Moved interaction {im.id} to long-term memory.")
 
-                        # Increase decay factor for relevant interaction
-                        im.decay_factor *= 1.1  # Increase by 10% or adjust as needed
+                    # Increase decay factor for relevant interaction
+                    im.decay_factor *= 1.1  # Increase by 10%, adjust as needed
                 else:
                     # Apply decay for non-relevant interactions
                     im.decay_factor *= 0.9
@@ -190,9 +191,8 @@ class MemoryStore:
 
         logger.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 
-    def retrieve_from_semantic_memory(self, query_embedding_norm):
+    def retrieve_from_semantic_memory(self, query_interaction: InteractionData):
         logger.info("Retrieving interactions from semantic memory...")
-        current_time = time.time()
         # Find the cluster closest to the query
         cluster_similarities = {}
         for label, items in self.semantic_memory.items():
@@ -200,7 +200,7 @@ class MemoryStore:
             cluster_embeddings = np.vstack([e for e, _ in items])
             centroid = np.mean(cluster_embeddings, axis=0).reshape(1, -1)
             centroid_norm = normalize(centroid)
-            similarity = cosine_similarity(query_embedding_norm, centroid_norm)[0][0]
+            similarity = cosine_similarity(query_interaction.normalize_embedding(), centroid_norm)[0][0]
             cluster_similarities[label] = similarity
 
         # Select the most similar cluster
@@ -214,18 +214,8 @@ class MemoryStore:
         interactions = [(e, i) for e, i in cluster_items]
 
         # Sort interactions based on similarity to the query
-        interactions.sort(key=lambda x: cosine_similarity(query_embedding_norm, normalize(x[0]))[0][0], reverse=True)
+        interactions.sort(key=lambda x: cosine_similarity(query_interaction.normalize_embedding(), normalize(x[0]))[0][0], reverse=True)
         semantic_interactions = [interaction for _, interaction in interactions[:5]]  # Limit to top 5 interactions
-
-        # Update access count for these retrieved interactions
-        for interaction in semantic_interactions:
-            interaction_id = interaction.id
-            idx = next((i for i, item in enumerate(self.short_term_memory) if item.id == interaction_id), None)
-            if idx is not None:
-                im = self.short_term_memory[idx]
-                im.last_accessed = current_time
-                im.access_count += 1
-                logger.debug(f"Updated access count for interaction {interaction_id}: {im.access_count}")
 
         logger.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
         return semantic_interactions
