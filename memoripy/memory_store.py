@@ -65,7 +65,7 @@ class MemoryStore:
             # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
             self.graph.remove_node(concept)
 
-    def retrieve(self, query_embedding, query_concepts, similarity_threshold=0.4, exclude_last_n=0):
+    def retrieve(self, query_interaction: InteractionData, similarity_threshold=0.4, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
             logger.info("No interactions available in short-term memory for retrieval.")
             return []
@@ -73,9 +73,6 @@ class MemoryStore:
         logger.info("Retrieving relevant interactions from short-term memory...")
         relevant_interactions = []
         current_time = time.time()
-
-        # Normalize embeddings for cosine similarity
-        query_embedding_norm = normalize(query_embedding)
 
         # Calculate adjusted similarity for each interaction
         if len(self.short_term_memory) > exclude_last_n:
@@ -86,14 +83,14 @@ class MemoryStore:
             relevant_interactions = list(                                                                  # Cast to a list
                 filter(lambda x,_ : x < similarity_threshold,                                              # Filter out entries under the adjusted similarity threshold
                     zip(                                                                                   # Build (adjusted similarity, interaction) tuples
-                        [x.adjusted_similarity(query_embedding_norm, current_time) for x in temp_memory],  # Build the list of adjusted similarities for each interaction
+                        [x.adjusted_similarity(query_interaction, current_time) for x in temp_memory],  # Build the list of adjusted similarities for each interaction
                         temp_memory
                     )
                 )
             )
 
         # Spreading activation
-        activated_concepts = self.spreading_activation(query_concepts)
+        activated_concepts = self.spreading_activation(query_interaction)
 
         # Integrate spreading activation scores
         final_interactions = []
@@ -107,7 +104,7 @@ class MemoryStore:
         final_interactions = [interaction for _, interaction in final_interactions]
 
         # Retrieve from semantic memory
-        semantic_interactions = self.retrieve_from_semantic_memory(query_embedding_norm)
+        semantic_interactions = self.retrieve_from_semantic_memory(query_interaction)
         list(set(final_interactions.extend(semantic_interactions)))
 
         # Update interaction access
@@ -150,14 +147,14 @@ class MemoryStore:
         for im in self.decayed_memory:
             self.short_term_memory.pop(im)
 
-    def spreading_activation(self, query_concepts):
+    def spreading_activation(self, query_interaction: InteractionData):
         logger.info("Spreading activation for concept associations...")
         activated_nodes = {}
         initial_activation = 1.0
         decay_factor = 0.5  # How much the activation decays each step
 
         # Initialize activation levels
-        for concept in query_concepts:
+        for concept in query_interaction.concepts:
             activated_nodes[concept] = initial_activation
 
         # Spread activation over the graph
@@ -215,7 +212,7 @@ class MemoryStore:
 
         # Sort interactions based on similarity to the query
         interactions.sort(key=lambda x: cosine_similarity(query_interaction.normalize_embedding(), normalize(x[0]))[0][0], reverse=True)
-        semantic_interactions = [interaction for _, interaction in interactions[:5]]  # Limit to top 5 interactions
+        semantic_interactions = interactions[:5]  # Limit to top 5 interactions
 
         logger.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
         return semantic_interactions

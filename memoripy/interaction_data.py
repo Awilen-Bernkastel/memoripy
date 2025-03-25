@@ -39,11 +39,11 @@ class InteractionData:
         self.decay_factor *= factor
         return self.decay_factor
 
-    def adjusted_similarity(self, query_embedding_norm, current_time):
+    def adjusted_similarity(self, query_interaction, current_time):
         decay_rate = 0.0001 # Adjust decay rate as needed
         # Compute the cosine similarity
         # Multiply by the reinforcement factor
         # Multiply by the decay factor that's updated in the process
-        return (cosine_similarity(query_embedding_norm, self.normalize_embedding())[0][0]) * \
+        return (cosine_similarity(query_interaction.normalize_embedding(), self.normalize_embedding())[0][0]) * \
                 np.log1p(self.access_count) * \
                 self.update_decay_factor(np.exp(-decay_rate * (current_time - self.last_accessed)))
