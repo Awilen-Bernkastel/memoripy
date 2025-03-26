@@ -179,7 +179,7 @@ class MemoryStore:
         kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
 
         # Build semantic memory clusters
-        self.semantic_memory = {label: [im for im in self.short_term_memory if im.label == label] for label in set(kmeans.labels_)}
+        self.semantic_memory = {label: [interaction for interaction, lbl in zip(self.short_term_memory, kmeans.labels_) if lbl == label] for label in set(kmeans.labels_)}
 
         logger.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 
