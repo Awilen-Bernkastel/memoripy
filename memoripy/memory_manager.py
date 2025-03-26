@@ -47,7 +47,10 @@ class MemoryManager:
 
         # Initialize memory store with the correct dimension
         self.dimension = self.embedding_model.initialize_embedding_dimension()
-        self.memory_store = MemoryStore(dimension=self.dimension)
+        try:
+            self.memory_store = MemoryStore(dimension=self.dimension) # FAISS-enabled
+        except TypeError:
+            self.memory_store = MemoryStore() # Non-FAISS
 
         if storage is None:
             self.storage = InMemoryStorage()
