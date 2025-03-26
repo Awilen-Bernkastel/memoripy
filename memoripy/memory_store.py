@@ -75,18 +75,14 @@ class MemoryStore:
 
         # Calculate adjusted similarity for each interaction
         if len(self.short_term_memory) > exclude_last_n:
-
-            temp_memory = self.short_term_memory[:-exclude_last_n]
-
             # Extract by adjusted similarity
-            relevant_interactions = list(                                                                  # Cast to a list
-                filter(lambda x,_ : x < similarity_threshold,                                              # Filter out entries under the adjusted similarity threshold
-                    zip(                                                                                   # Build (adjusted similarity, interaction) tuples
-                        [x.adjusted_similarity(query_interaction, current_time) for x in temp_memory],  # Build the list of adjusted similarities for each interaction
-                        temp_memory
-                    )
-                )
-            )
+            relevant_interactions = list( # Cast to a list
+                                        filter( # Filter out...
+                                            lambda x,_ : x < similarity_threshold, # ... entries under the similarity threshold
+                                            # Build the list of (adjusted_similarity, interaction) tuples for each interaction
+                                            [(x.adjusted_similarity(query_interaction, current_time), x) for x in self.short_term_memory[:-exclude_last_n]]
+                                        )
+                                    )
 
         # Spreading activation
         activated_concepts = self.spreading_activation(query_interaction)
