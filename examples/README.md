@@ -7,4 +7,4 @@ This directory and related subdirectories contain several examples on how to use
 * [open_ai_example.py](./openai_example.py): Using Memoripy with an OpenAI chat model and an Ollama embedding model.
 * [openrouter.py](./openrouter.py): Using Memoripy with an OpenRouter chat model and an Ollama embedding model.
 * [dynamo](./dynamo/): Using the Memoripy storage adapter to leverage AWS DynamoDB as the memory persistence layer.
-* [Interactive prompt](./interactive_prompt.py): Leveraging parallel processing to build a crude interactive prompt and allow memorization in the background.
+* [Interactive prompt](./interactive_prompt_example.py): Leveraging parallel processing to build a crude interactive prompt and allow memorization in the background.
