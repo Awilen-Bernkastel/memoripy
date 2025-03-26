@@ -38,6 +38,8 @@ def main():
     mem_thread = Thread()
     mem_thread.start()
 
+    recent_interactions_count = 5
+
     while True:
         # New user prompt
         interaction = InteractionData(
@@ -51,12 +53,12 @@ def main():
         mem_thread.join()
 
         print("Getting memories...")
-        # Load the last 5 interactions from history (for context)
+        # Load the last recent_interactions_count interactions from history (for context)
         short_term, _ = memory_manager.load_history()
-        last_interactions = short_term[-5:] if len(short_term) >= 5 else short_term
+        last_interactions = short_term[-recent_interactions_count:] if len(short_term) >= recent_interactions_count else short_term
 
-        # Retrieve relevant past interactions, excluding the last 5
-        relevant_interactions = memory_manager.retrieve_relevant_interactions(interaction, exclude_last_n=5)
+        # Retrieve relevant past interactions, excluding the last recent_interactions_count
+        relevant_interactions = memory_manager.retrieve_relevant_interactions(interaction, exclude_last_n=recent_interactions_count)
 
         print("Getting stream...")
         chunked_response = memory_manager.generate_response(interaction, last_interactions, relevant_interactions)
