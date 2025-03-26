@@ -6,17 +6,17 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 class InteractionData:
-    def __init__(self):
-        self.id = None
-        self.prompt = None
-        self.output = None
-        self.embedding = None
-        self.timestamp = None
-        self.last_accessed = None
-        self.access_count = None
-        self.decay_factor = None
-        self.concepts = None
-        self.normalized_embedding = None
+    def __init__(self, *args, **kwargs):
+        self.id = kwargs.get('id', None)
+        self.prompt = kwargs.get('prompt', None)
+        self.output = kwargs.get('output', None)
+        self.embedding = kwargs.get('embedding', None)
+        self.timestamp = kwargs.get('timestamp', None)
+        self.last_accessed = kwargs.get('last_accessed', None)
+        self.access_count = kwargs.get('access_count', None)
+        self.decay_factor = kwargs.get('decay_factor', None)
+        self.concepts = kwargs.get('concepts', None)
+        self.normalized_embedding = kwargs.get('normalized_embedding', None)
 
     def __getitem__(self, key):
         return getattr(self, key)
