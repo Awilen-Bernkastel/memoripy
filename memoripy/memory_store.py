@@ -43,7 +43,7 @@ class MemoryStore:
             if concept1 == concept2:
                 continue
             # Each node provides a weight of 1. Two nodes provide a weight of 2.
-            self.graph.add_edge(concept1, concept2, weight=self.graph.get_edge_data(concept1, concept2, {'weight:0'})['weight'] + 2)
+            self.graph.add_edge(concept1, concept2, weight=self.graph.get_edge_data(concept1, concept2, {'weight': 0})['weight'] + 2)
 
     def cleanup_concepts(self):
         concepts_potentially_to_remove = [m.concepts for m in self.decayed_memory]
