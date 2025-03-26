@@ -6,7 +6,6 @@ import logging
 import numpy as np
 import time
 import networkx as nx
-from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
 from collections import defaultdict
@@ -197,7 +196,7 @@ class MemoryStore:
             cluster_embeddings = np.vstack([e for e, _ in items])
             centroid = np.mean(cluster_embeddings, axis=0).reshape(1, -1)
             centroid_norm = normalize(centroid)
-            similarity = cosine_similarity(query_interaction.normalize_embedding(), centroid_norm)[0][0]
+            similarity = query_interaction.embedding_similarity(centroid_norm)
             cluster_similarities[label] = similarity
 
         # Select the most similar cluster
@@ -211,7 +210,7 @@ class MemoryStore:
         interactions = [(e, i) for e, i in cluster_items]
 
         # Sort interactions based on similarity to the query
-        interactions.sort(key=lambda x: cosine_similarity(query_interaction.normalize_embedding(), normalize(x[0]))[0][0], reverse=True)
+        interactions.sort(key=lambda x: query_interaction.embedding_similarity(normalize(x[0])), reverse=True)
         semantic_interactions = interactions[:5]  # Limit to top 5 interactions
 
         logger.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
