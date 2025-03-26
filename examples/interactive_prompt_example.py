@@ -2,7 +2,7 @@
 
 import sys
 from threading import Thread
-from memoripy import MemoryManager, InMemoryStorage
+from memoripy import MemoryManager
 from memoripy.interaction_data import InteractionData
 from memoripy.model_interfaces.ollama_models import OllamaChatModel, OllamaEmbeddingModel
 from memoripy.easy_thread import thread
@@ -26,9 +26,14 @@ def main():
     embedding_model_name = "mxbai-embed-large"  # Specific embedding model name, this is MixedBreadAI's embedding model.
 
     # Choose your storage option
+
+    # from memoripy import JSONStorage
     # storage_option = JSONStorage()
-    # Or use another storage option:
+
+    # from memoripy import SQLStorage
     # storage_option = SQLStorage()
+
+    from memoripy import InMemoryStorage
     storage_option = InMemoryStorage()
 
     # Initialize the MemoryManager with the selected models and storage
@@ -40,6 +45,9 @@ def main():
 
     recent_interactions_count = 5
 
+    # When using a permanent storage option, embed the while loop in a try/except to let the memory thread finish.
+    # KeyboardInterrupt is just your standard Ctrl-C.
+    # try:
     while True:
         # New user prompt
         interaction = InteractionData(
@@ -72,6 +80,10 @@ def main():
 
         # Launch memorization thread in the background to allow for immediate prompting
         mem_thread = thread(memorize, interaction, memory_manager)
+    
+    # except KeyboardInterrupt:
+    #     mem_thread.join()
+
 
 if __name__ == "__main__":
     main()
