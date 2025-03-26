@@ -1,6 +1,6 @@
 # Why this fork?
 
-This is an effort at reworking the Memoripy project and make it faster by using more of Python's built-in features, and easier to install and extend. The major motivation to fork rather than work with the original repository is the depth of changes introduced. This is not final, I'm certain there is even faster code yet to be written, and slower code yet to be replaced.
+This is an effort at reworking the Memoripy project and hopefully make it faster by using more of Python's built-in features, and easier to install and extend. The major motivation to fork rather than work with the original repository is the depth of changes introduced. This is not final, I'm certain there is even faster code yet to be written, and slower code yet to be replaced.
 
 I advocate for using local LLMs (that don't come from big corporations adamant on snooping on, and reusing your data to their benefits) and the context size there can easily become a problem, especially on lower-end machines. And that's before talking about the fatal flaw of local LLMs not remembering their past interactions from one session to the next.
 
