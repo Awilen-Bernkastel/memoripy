@@ -1,4 +1,7 @@
+#!/usr/bin/env python3
+
 # Ollama API example:
+# Created by Awilen Bernkastel
 
 import sys
 from memoripy import MemoryManager, SQLStorage, JSONStorage, InMemoryStorage
