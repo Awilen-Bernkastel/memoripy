@@ -3,11 +3,11 @@
 import sys
 from threading import Thread
 from memoripy import MemoryManager
-from memoripy.interaction_data import InteractionData
+from memoripy.interaction import Interaction
 from memoripy.model_interfaces.ollama_models import OllamaChatModel, OllamaEmbeddingModel
 from memoripy.easy_thread import thread
 
-def memorize(interaction: InteractionData, memory_manager: MemoryManager):
+def memorize(interaction: Interaction, memory_manager: MemoryManager):
     print("\nExtracting concepts...")
     # Extract concepts for the new interaction
     combined_text = f"{interaction.prompt} {interaction.output}"
@@ -50,7 +50,7 @@ def main():
     # try:
     while True:
         # New user prompt
-        interaction = InteractionData(
+        interaction = Interaction(
             output = ""
         )
 

@@ -1,7 +1,7 @@
 # General chat completions endpoint example (using OpenRouter):
 
 from memoripy import MemoryManager, JSONStorage
-from memoripy.interaction_data import InteractionData
+from memoripy.interaction import Interaction
 from memoripy.model_interfaces.chat_completion_models import ChatCompletionsModel
 from memoripy.model_interfaces.ollama_models import OllamaEmbeddingModel
 
@@ -27,7 +27,7 @@ def main():
     memory_manager = MemoryManager(ChatCompletionsModel(api_endpoint, api_key, chat_model_name), OllamaEmbeddingModel(embedding_model_name), storage=storage_option)
 
     # New user prompt# New user prompt
-    interaction = InteractionData(
+    interaction = Interaction(
         prompt = "My name is Khazar"
     )
 

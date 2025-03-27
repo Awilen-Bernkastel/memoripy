@@ -2,7 +2,7 @@
 
 import sys
 from memoripy import MemoryManager, SQLStorage, JSONStorage, InMemoryStorage
-from memoripy.interaction_data import InteractionData
+from memoripy.interaction import Interaction
 from memoripy.model_interfaces.ollama_models import OllamaChatModel, OllamaEmbeddingModel
 
 def main(prompt):
@@ -20,7 +20,7 @@ def main(prompt):
     memory_manager = MemoryManager(OllamaChatModel(chat_model_name), OllamaEmbeddingModel(embedding_model_name), storage=storage_option)
 
     # New user prompt
-    interaction = InteractionData(
+    interaction = Interaction(
         prompt = prompt,
         output = ""
     )

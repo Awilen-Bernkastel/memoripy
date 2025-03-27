@@ -3,7 +3,7 @@ import json
 import logging
 import os
 
-from ..interaction_data import InteractionData
+from ..interaction import Interaction
 from .storage import BaseStorage
 
 logger = logging.getLogger("memoripy")
@@ -61,7 +61,7 @@ class JSONStorage(BaseStorage):
         }
 
     def _deserialize_interaction(self, memory):
-        return InteractionData(
+        return Interaction(
             id=memory['id'],
             prompt=memory['prompt'],
             output=memory['output'],

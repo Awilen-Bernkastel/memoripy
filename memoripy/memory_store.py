@@ -9,7 +9,7 @@ import networkx as nx
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
 from collections import defaultdict
-from .interaction_data import InteractionData
+from .interaction import Interaction
 
 logger = logging .getLogger("memoripy")
 
@@ -21,7 +21,7 @@ class MemoryStore:
         self.graph = nx.Graph()      # Graph for bidirectional associations
         self.semantic_memory = defaultdict(list)  # Semantic memory clusters
 
-    def add_interaction(self, interaction: InteractionData):
+    def add_interaction(self, interaction: Interaction):
         # Reshape the embedding if necessary
         interaction.embedding = np.array(interaction.embedding).reshape(1, -1)
 
@@ -64,7 +64,7 @@ class MemoryStore:
             # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
             self.graph.remove_node(concept)
 
-    def retrieve(self, query_interaction: InteractionData, similarity_threshold=0.4, exclude_last_n=0):
+    def retrieve(self, query_interaction: Interaction, similarity_threshold=0.4, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
             logger.info("No interactions available in short-term memory for retrieval.")
             return []
@@ -142,7 +142,7 @@ class MemoryStore:
         for im in self.decayed_memory:
             self.short_term_memory.pop(im)
 
-    def spreading_activation(self, query_interaction: InteractionData):
+    def spreading_activation(self, query_interaction: Interaction):
         logger.info("Spreading activation for concept associations...")
         activated_nodes = {}
         initial_activation = 1.0
@@ -183,7 +183,7 @@ class MemoryStore:
 
         logger.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 
-    def retrieve_from_semantic_memory(self, query_interaction: InteractionData):
+    def retrieve_from_semantic_memory(self, query_interaction: Interaction):
         logger.info("Retrieving interactions from semantic memory...")
         # Find the cluster closest to the query
         cluster_similarities = {}

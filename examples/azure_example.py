@@ -1,9 +1,9 @@
 # Azure AI Example
 
 from memoripy import MemoryManager, JSONStorage
-from memoripy.interaction_data import InteractionData
+from memoripy.interaction import Interaction
 from memoripy.model_interfaces.azure_openai_models import AzureOpenAIEmbeddingModel, AzureOpenAIChatModel
-from memoripy.interaction_data import InteractionData
+from memoripy.interaction import Interaction
 
 def main():
     # Set here your actual Azure OpenAI API key, endpoint and API version
@@ -30,7 +30,7 @@ def main():
         storage=storage_option)
     
     # New user prompt
-    interaction = InteractionData(
+    interaction = Interaction(
         prompt = "My name is Guglielmo"
     )
 

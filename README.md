@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
 - `BaseStorage`: Abstract base class for defining storage methods.
 
-- `InteractionData`: memory object (replaces the various dicts and lists in MemoryStore.)
+- `Interaction`: memory object of an interaction between the user and the LLM.
 
 ## Core Functionalities
 1. **Initialize Memory**: Load previous interactions from the chosen storage and initialize memory.

@@ -5,7 +5,7 @@ from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
-class InteractionData:
+class Interaction:
     def __init__(self, *args, **kwargs):
         self.id = kwargs.get('id', None)
         self.prompt = kwargs.get('prompt', None)

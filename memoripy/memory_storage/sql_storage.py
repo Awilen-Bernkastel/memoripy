@@ -9,7 +9,7 @@ import logging
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from ..interaction_data import InteractionData
+from ..interaction import Interaction
 
 from .sql_storage_models import MemoryOwner, Memory, Base, Embedding, Concept
 from .storage import BaseStorage
@@ -50,7 +50,7 @@ class SQLStorage(BaseStorage):
         present_memories_uuid = {x.id for x in self.history[memory_type]}
         for interaction in interactions:
             if interaction.uuid not in present_memories_uuid:
-                im = InteractionData()
+                im = Interaction()
                 im.id = interaction.uuid
                 im.prompt = interaction.prompt
                 im.output = interaction.output

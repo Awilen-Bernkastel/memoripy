@@ -1,7 +1,7 @@
 # main.py
 
 import sys
-from memoripy.interaction_data import InteractionData
+from memoripy.interaction import Interaction
 from memory_manager import MemoryManager
 from .memory_storage.json_storage import JSONStorage
 from langchain_ollama import ChatOllama
@@ -29,7 +29,7 @@ def main(new_prompt):
         storage=storage_option
     )
 
-    interaction = InteractionData(
+    interaction = Interaction(
         prompt=new_prompt,
         output=""
     )

@@ -10,7 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
 from collections import defaultdict
-from .interaction_data import InteractionData
+from .interaction import Interaction
 
 logger = logging.getLogger("memoripy")
 
@@ -25,7 +25,7 @@ class MemoryStore:
         self.semantic_memory = defaultdict(list)  # Semantic memory clusters
         self.cluster_labels = []     # Labels for each interaction's cluster
 
-    def add_interaction(self, interaction: InteractionData):
+    def add_interaction(self, interaction: Interaction):
         # Reshape the embedding if necessary
         interaction.embedding = np.array(interaction.embedding).reshape(1, -1)
 

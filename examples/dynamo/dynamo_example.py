@@ -1,5 +1,5 @@
 from memoripy import MemoryManager
-from memoripy.interaction_data import InteractionData
+from memoripy.interaction import Interaction
 from memoripy.memory_storage.dynamo_storage import DynamoStorage
 from memoripy.model_interfaces.azure_openai_models import AzureOpenAIEmbeddingModel, AzureOpenAIChatModel
 
@@ -58,7 +58,7 @@ def main():
     # Store this new interaction along with its embedding and concepts
     new_embedding = memory_manager.get_embedding(combined_text)
 
-    interaction = InteractionData(
+    interaction = Interaction(
         prompt=new_prompt,
         output=response,
         embedding=new_embedding,

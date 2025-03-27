@@ -10,7 +10,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from .memory_store import MemoryStore
 from .model_interfaces.model import ChatModel, EmbeddingModel
 import logging
-from .interaction_data import InteractionData
+from .interaction import Interaction
 
 class ConceptExtractionResponse(BaseModel):
     concepts: list[str] = Field(description="List of key concepts extracted from the text.")
@@ -80,7 +80,7 @@ class MemoryManager:
         self.storage.save_memory_to_history(self.memory_store)
 
     # def add_interaction(self, prompt: str, output: str, embedding: np.ndarray, concepts: list[str]):
-    def add_interaction(self, interaction: InteractionData):
+    def add_interaction(self, interaction: Interaction):
         timestamp = time.time()
         interaction.id = str(uuid.uuid4())
         interaction.timestamp = timestamp
@@ -114,12 +114,12 @@ class MemoryManager:
         self.memory_store.cluster_interactions()
         logger.info(f"Memory initialized with {len(self.memory_store.short_term_memory)} interactions in short-term and {len(self.memory_store.long_term_memory)} in long-term.")
 
-    def retrieve_relevant_interactions(self, interaction: InteractionData, similarity_threshold=0.4, exclude_last_n=0) -> list:
+    def retrieve_relevant_interactions(self, interaction: Interaction, similarity_threshold=0.4, exclude_last_n=0) -> list:
         interaction.embedding = self.get_embedding(interaction.prompt)
         interaction.concepts = self.extract_concepts(interaction.prompt)
         return self.memory_store.retrieve(interaction, similarity_threshold, exclude_last_n=exclude_last_n)
 
-    def generate_response(self, query_interaction: InteractionData, last_interactions: list, retrievals: list, context_window=3, stream=True) -> str:
+    def generate_response(self, query_interaction: Interaction, last_interactions: list, retrievals: list, context_window=3, stream=True) -> str:
         context = self.prompt_elements["intro"]
         if retrievals:
             context += self.prompt_elements["intro_ltm"]
