@@ -120,21 +120,19 @@ class MemoryManager:
         interaction.concepts = self.extract_concepts(interaction.prompt)
         return self.memory_store.retrieve(interaction, similarity_threshold, exclude_last_n=exclude_last_n)
 
-    def generate_response(self, query_interaction: Interaction, last_interactions: list, retrievals: list, context_window=3, stream=True) -> str:
+    def generate_response(self, query_interaction: Interaction, last_interactions: list, retrievals: list, stream=True) -> str:
         context = self.prompt_elements["intro"]
         if retrievals:
             context += self.prompt_elements["intro_ltm"]
-            retrieved_context_interactions = retrievals[:context_window]
             retrieved_context = "\n".join([f"({datetime.fromtimestamp(r["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')}) {self.prompt_elements["ltm_user"]}\
-                                           {r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrieved_context_interactions])
+                                           {r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrievals])
             logger.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
             context += "\n" + retrieved_context
             context += self.prompt_elements["outro_ltm"]
 
         if last_interactions:
             context += self.prompt_elements["intro_stm"]
-            context_interactions = last_interactions[-context_window:]
-            context += "\n".join([f"({datetime.fromtimestamp(r["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')}) {self.prompt_elements["stm_user"]}{r['prompt']}\n{self.prompt_elements["stm_agent"]}{r['output']}" for r in context_interactions])
+            context += "\n".join([f"({datetime.fromtimestamp(r["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')}) {self.prompt_elements["stm_user"]}{r['prompt']}\n{self.prompt_elements["stm_agent"]}{r['output']}" for r in last_interactions])
             logger.info(f"Using the following last interactions as context for response generation:\n{context}")
             context += self.prompt_elements["outro_stm"]
         elif context == self.prompt_elements["intro"]:
