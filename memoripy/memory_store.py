@@ -3,6 +3,7 @@
 
 from itertools import combinations
 import logging
+import math
 import numpy as np
 import time
 import networkx as nx
@@ -186,7 +187,7 @@ class MemoryStore:
             return
 
         embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory])
-        num_clusters = min(10, len(self.short_term_memory))  # Adjust number of clusters based on the number of interactions
+        num_clusters = math.floor(math.sqrt(len(self.short_term_memory))) # Allow a growing number of clusters without going overboard.
         kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
 
         # Build semantic memory clusters
