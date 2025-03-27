@@ -9,7 +9,7 @@ from langchain_ollama import ChatOllama
 def main(new_prompt):
     # Define chat and embedding models
     chat_model = ChatOllama                     # Choose 'openai' or 'ollama' for chat
-    chat_model_name = "qwen2.5:7b"              # Specific chat model name
+    chat_model_name = "llama3.1:8b"             # Specific chat model name
     embedding_model = ChatOllama                # Choose 'openai' or 'ollama' for embeddings
     embedding_model_name = "mxbai-embed-large"  # Specific embedding model name
 
@@ -29,35 +29,32 @@ def main(new_prompt):
         storage=storage_option
     )
 
+    interaction = InteractionData(
+        prompt=new_prompt,
+        output=""
+    )
+
     # Load the last 5 interactions from history (for context)
     short_term, _ = memory_manager.load_history()
     last_interactions = short_term[-5:] if len(short_term) >= 5 else short_term
 
     # Retrieve relevant past interactions, excluding the last 5
-    relevant_interactions = memory_manager.retrieve_relevant_interactions(new_prompt, exclude_last_n=5)
+    relevant_interactions = memory_manager.retrieve_relevant_interactions(interaction, exclude_last_n=5)
 
     # Generate a response using the last interactions and retrieved interactions
-    response_chunks = memory_manager.generate_response(new_prompt, last_interactions, relevant_interactions, stream=True)
+    response_chunks = memory_manager.generate_response(interaction, last_interactions, relevant_interactions, stream=True)
 
-    response = ""
     # Display the response
     for chunk in response_chunks:
         print(str(chunk.content), end="", flush=True)
-        response += str(chunk.content)
+        interaction.output += str(chunk.content)
 
     # Extract concepts for the new interaction
-    combined_text = f"{new_prompt} {response}"
-    concepts = memory_manager.extract_concepts(combined_text)
+    combined_text = f"{interaction.prompt} {interaction.output}"
+    interaction.concepts = memory_manager.extract_concepts(combined_text)
 
     # Store this new interaction along with its embedding and concepts
-    new_embedding = memory_manager.get_embedding(combined_text)
-
-    interaction = InteractionData(
-        prompt=new_prompt,
-        output=response,
-        embedding=new_embedding,
-        concepts=concepts
-    )
+    interaction.embedding = memory_manager.get_embedding(combined_text)
 
     memory_manager.add_interaction(interaction)
 
