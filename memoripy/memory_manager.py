@@ -105,14 +105,15 @@ class MemoryManager:
 
     def initialize_memory(self):
         short_term, long_term = self.load_history()
+        self.memory_store.initialize_memory(short_term+long_term)
         for interaction in short_term:
             # Standardize the dimension of each interaction's embedding
             interaction.embedding = self.standardize_embedding(np.array(interaction['embedding']))
-            self.memory_store.add_interaction(interaction)
+        for interaction in long_term:
+            interaction.embedding = self.standardize_embedding(np.array(interaction['embedding']))
         self.memory_store.long_term_memory.extend(long_term)
 
-        self.memory_store.cluster_interactions()
-        logger.info(f"Memory initialized with {len(self.memory_store.short_term_memory)} interactions in short-term and {len(self.memory_store.long_term_memory)} in long-term.")
+        logger.info(f"Memory initialized with {len(self.memory_store.short_term_memory) + len(self.memory_store.long_term_memory)} interactions in short-term, of which {len(self.memory_store.long_term_memory)} are long-term.")
 
     def retrieve_relevant_interactions(self, interaction: Interaction, similarity_threshold=0.4, exclude_last_n=0) -> list:
         interaction.embedding = self.get_embedding(interaction.prompt)

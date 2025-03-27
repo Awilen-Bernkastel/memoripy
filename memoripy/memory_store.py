@@ -25,7 +25,6 @@ class MemoryStore:
         # Reshape the embedding if necessary
         interaction.embedding = np.array(interaction.embedding).reshape(1, -1)
 
-        logger.info(f"Adding new interaction to short-term memory: '{interaction['prompt']}'")
         # Save the interaction data to short-term memory
         self.short_term_memory.append(interaction)
 
@@ -36,6 +35,18 @@ class MemoryStore:
         self.cluster_interactions()
 
         logger.info(f"Total interactions stored in short-term memory: {len(self.short_term_memory)}")
+
+    def initialize_memory(self, interactions: list[Interaction]):
+        self.short_term_memory = []
+        self.long_term_memory = []
+        # Add all interactions at once
+        logger.info(f"Adding {len(interactions)} interactions to short-term memory...")
+        for interaction in interactions:
+            interaction.embedding = np.array(interaction.embedding).reshape(1, -1)
+            self.short_term_memory.append(interaction)
+            self.update_graph(interaction.concepts)
+        # Only do the clustering once
+        self.cluster_interactions()
 
     def update_graph(self, concepts):
         # Add edges between concepts (associations) (nodes are added to the graph if they don't exist)
