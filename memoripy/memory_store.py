@@ -180,10 +180,10 @@ class MemoryStore:
         return activated_nodes
 
     def cluster_interactions(self):
+        self.semantic_memory = {}
         logger.info("Clustering interactions to create hierarchical memory...")
         if len(self.short_term_memory) < 2:
             logger.info("Not enough interactions to perform clustering.")
-            self.semantic_memory = {}
             return
 
         embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory])
@@ -191,7 +191,9 @@ class MemoryStore:
         kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
 
         # Build semantic memory clusters
-        self.semantic_memory = {label: [interaction for interaction, lbl in zip(self.short_term_memory, kmeans.labels_) if lbl == label] for label in set(kmeans.labels_)}
+        labeled_interactions = list(zip(kmeans.labels_, self.short_term_memory)).sort(lambda x,_: x)
+        for interaction, label in labeled_interactions:
+            self.semantic_memory[label].append(interaction)
 
         logger.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 
@@ -199,9 +201,9 @@ class MemoryStore:
         logger.info("Retrieving interactions from semantic memory...")
         # Find the cluster closest to the query
         cluster_similarities = {}
-        for label, items in self.semantic_memory.items():
+        for label, interactions in self.semantic_memory.items():
             # Calculate centroid of the cluster
-            cluster_embeddings = np.vstack([e for e, _ in items])
+            cluster_embeddings = np.vstack([interaction.embedding for interaction in interactions])
             centroid = np.mean(cluster_embeddings, axis=0).reshape(1, -1)
             centroid_norm = normalize(centroid)
             similarity = query_interaction.embedding_similarity(centroid_norm)
