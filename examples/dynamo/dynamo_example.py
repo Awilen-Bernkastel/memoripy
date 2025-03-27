@@ -33,8 +33,7 @@ def main():
 
     # New user prompt
     interaction = Interaction(
-        prompt = "My name is David",
-        output = ""
+        prompt = "My name is David"
     )
 
     # Load the last 5 interactions from history (for context)
