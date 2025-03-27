@@ -124,6 +124,9 @@ class MemoryStore:
             # Recluster interactions
             self.cluster_interactions()
 
+        # Sort retrieved interaction by timestamp
+        final_interactions.sort(lambda x: x.timestamp)
+
         logger.info(f"Retrieved {len(final_interactions)} relevant interactions from memory.")
         return final_interactions
 
