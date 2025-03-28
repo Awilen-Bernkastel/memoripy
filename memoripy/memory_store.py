@@ -57,10 +57,12 @@ class MemoryStore:
             self.graph.add_edge(concept1, concept2, weight=self.graph.get_edge_data(concept1, concept2, {'weight': 0})['weight'] + 1)
 
     def cleanup_concepts(self):
+        # Reduce graph weights for interactions about to be forgotten
         for im in self.decayed_memories:
             for concept1, concept2 in combinations(im.concepts, 2):
                 self.graph[concept1][concept2]['weight'] -= 1
 
+        # Remove the concepts from the graph if there's no more interaction after forgetting that have those concepts
         concepts_potentially_to_remove = {x.concepts for x in self.decayed_memory}
         concepts_remaining = {m.concepts for m in self.short_term_memory}
 
@@ -111,9 +113,10 @@ class MemoryStore:
         self.update_interactions(final_interactions, current_time, exclude_last_n)
 
         if self.decayed_memory:
-            self.cleanup_concepts()
             # Filter the interactions marked for deletion
             self.short_term_memory = list(filter(lambda x: x not in self.decayed_memory, self.short_term_memory))
+            # Cleanup the concepts of the decayed memories
+            self.cleanup_concepts()
             # Make sure decayed memories do not end up in the final_interactions from the semantic memory retrieval
             final_interactions = list(filter(lambda x: x not in self.decayed_memory, final_interactions))
             # Recluster interactions
