@@ -136,29 +136,29 @@ class MemoryStore:
             ri = [r[1] for r in relevant_interactions]
             for im in self.short_term_memory[:-exclude_last_n]:
                 if im in ri:
+                    # Increase access count and decay factor for relevant interaction
                     im.access_count += 1
+                    im.decay_factor *= 1.1  # Increase by 10%, adjust as needed
                     im.last_accessed = current_time
-                    logger.debug(f"Updated access count for interaction {im.id}: {im.access_count}")
+                    logger.debug(f"Increased decay factor for interaction {im.id}: {im.decay_factor:0.3f}")
 
-                    # Move interaction to long-term memory if access count exceeds 10
-                    if im.access_count > 10 and im not in self.long_term_memory:
+                    if im not in self.long_term_memory and im.access_count > 10:
                         self.long_term_memory.append(im)
                         logger.info(f"Moved interaction {im.id} to long-term memory.")
 
-                    # Increase decay factor for relevant interaction
-                    im.decay_factor *= 1.1  # Increase by 10%, adjust as needed
                 else:
                     # Apply decay for non-relevant interactions
-                    im.decay_factor *= 0.9
+                    im.decay_factor /= 1.1
+                    logger.debug(f"Decreased decay factor for interaction {im.id}: {im.decay_factor:0.3f}")
                     # Mark non-committed short-term memories for forgetting
-                    if im not in self.long_term_memory and im.decay_factor < 0.3:
+                    if im not in self.long_term_memory and im.decay_factor < 0.3: # From 1, that's about 12 interactions without reinforcement
                         self.decayed_memory.append(im)
+                        logger.info(f"Moved interaction {im.id} to decayed memory.")
                     # Allow very heavily decayed interactions to be forgotten, even if in long-term memory 
-                    elif im in self.long_term_memory and im.decay_factor < 0.000001:
+                    elif im in self.long_term_memory and im.decay_factor < 0.000000000126: # From 2.56 (10 rememberances from 1.0), that's about 250 interactions without reinforcement
                         self.decayed_memory.append(im)
                         self.long_term_memory.pop(im)
-        for im in self.decayed_memory:
-            self.short_term_memory.pop(im)
+                        logger.info(f"Moved interaction {im.id} from long-term memory to decayed memory.")
 
     def spreading_activation(self, query_interaction: Interaction):
         logger.info("Spreading activation for concept associations...")
