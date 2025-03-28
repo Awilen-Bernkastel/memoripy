@@ -62,14 +62,13 @@ class MemoryStore:
             for concept1, concept2 in combinations(im.concepts, 2):
                 self.graph[concept1][concept2]['weight'] -= 1
 
-        # Remove the concepts from the graph if there's no more interaction after forgetting that have those concepts
+        # Filter the concepts that can be removed from the interactions ready to be forgotten, off of the remaining interactions
         concepts_potentially_to_remove = {x.concepts for x in self.decayed_memory}
-        concepts_remaining = {m.concepts for m in self.short_term_memory}
-
+        concepts_remaining = {x.concepts for x in self.short_term_memory}
         concepts_to_remove = filter(lambda x: x not in concepts_remaining, concepts_potentially_to_remove)
-        for concept in concepts_to_remove:
-            # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
-            self.graph.remove_node(concept)
+
+        # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
+        self.graph.remove_nodes_from(concepts_to_remove)
 
     def retrieve(self, query_interaction: Interaction, similarity_threshold=0.4, exclude_last_n=0):
         if len(self.short_term_memory) == 0:
@@ -84,8 +83,8 @@ class MemoryStore:
         if len(self.short_term_memory) > exclude_last_n:
             # Extract by adjusted similarity
             relevant_interactions = list( # Cast to a list
-                                        filter( # Filter out...
-                                            lambda x,_ : x >= similarity_threshold, # ... entries under the similarity threshold
+                                        filter(
+                                            lambda x,_ : x >= similarity_threshold, # Keep entries above the similarity threshold
                                             # Build the list of (adjusted_similarity, interaction) tuples for each interaction
                                             [(x.adjusted_similarity(query_interaction, current_time), x) for x in self.short_term_memory[:-exclude_last_n]]
                                         )
