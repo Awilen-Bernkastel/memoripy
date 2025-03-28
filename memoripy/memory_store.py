@@ -61,11 +61,10 @@ class MemoryStore:
             for concept1, concept2 in combinations(im.concepts, 2):
                 self.graph[concept1][concept2]['weight'] -= 1
 
-        concepts_potentially_to_remove = [m.concepts for m in self.decayed_memory]
-        concepts_potentially_to_remove = set(concepts_potentially_to_remove)
+        concepts_potentially_to_remove = {x.concepts for x in self.decayed_memory}
+        concepts_remaining = {m.concepts for m in self.short_term_memory}
 
-        concepts_remaining = set([m.concepts for m in self.short_term_memory]).union(set([m.concepts for m in self.long_term_memory]))
-        concepts_to_remove = list(filter(lambda x: x in concepts_remaining, concepts_potentially_to_remove))
+        concepts_to_remove = filter(lambda x: x not in concepts_remaining, concepts_potentially_to_remove)
         for concept in concepts_to_remove:
             # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
             self.graph.remove_node(concept)
@@ -84,7 +83,7 @@ class MemoryStore:
             # Extract by adjusted similarity
             relevant_interactions = list( # Cast to a list
                                         filter( # Filter out...
-                                            lambda x,_ : x < similarity_threshold, # ... entries under the similarity threshold
+                                            lambda x,_ : x >= similarity_threshold, # ... entries under the similarity threshold
                                             # Build the list of (adjusted_similarity, interaction) tuples for each interaction
                                             [(x.adjusted_similarity(query_interaction, current_time), x) for x in self.short_term_memory[:-exclude_last_n]]
                                         )
@@ -114,9 +113,9 @@ class MemoryStore:
         if self.decayed_memory:
             self.cleanup_concepts()
             # Filter the interactions marked for deletion
-            self.short_term_memory = list(filter(lambda x: x in self.decayed_memory, self.short_term_memory))
+            self.short_term_memory = list(filter(lambda x: x not in self.decayed_memory, self.short_term_memory))
             # Make sure decayed memories do not end up in the final_interactions from the semantic memory retrieval
-            final_interactions = list(filter(lambda x: x in self.decayed_memory, final_interactions))
+            final_interactions = list(filter(lambda x: x not in self.decayed_memory, final_interactions))
             # Recluster interactions
             # Not necessarily needed as the next interaction added will recluster them anyway,
             # enable this only to ensure data consistency.

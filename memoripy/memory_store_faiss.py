@@ -60,7 +60,7 @@ class MemoryStore:
     def cleanup_concepts(self):
         concepts_potentially_to_remove = set([m.concepts for m in self.decayed_memory])
         concepts_remaining = set([m.concepts for m in self.short_term_memory]).union(set([m.concepts for m in self.long_term_memory]))
-        concepts_to_remove = list(filter(lambda x: x in concepts_remaining, concepts_potentially_to_remove))
+        concepts_to_remove = list(filter(lambda x: x not in concepts_remaining, concepts_potentially_to_remove))
         for concept in concepts_to_remove:
             # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
             self.graph.remove_node(concept)
@@ -98,7 +98,7 @@ class MemoryStore:
         if self.decayed_memory:
             self.cleanup_concepts()
             # Filter the interactions marked for deletion
-            self.short_term_memory = list(filter(lambda x: x in self.decayed_memory, self.short_term_memory))
+            self.short_term_memory = list(filter(lambda x: x not in self.decayed_memory, self.short_term_memory))
             # Recluster interactions
             self.cluster_interactions()
 
