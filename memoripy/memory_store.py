@@ -183,7 +183,7 @@ class MemoryStore:
         return activated_nodes
 
     def cluster_interactions(self):
-        self.semantic_memory = {}
+        self.semantic_memory = defaultdict(list)
         logger.info("Clustering interactions to create hierarchical memory...")
         if len(self.short_term_memory) < 2:
             logger.info("Not enough interactions to perform clustering.")
