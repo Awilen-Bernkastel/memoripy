@@ -51,23 +51,17 @@ class MemoryStore:
 
     def update_graph(self, concepts):
         # Add edges between concepts (associations) (nodes are added to the graph if they don't exist)
+        # The graph is already bidirectional, we don't need to update (concept1, concept2) and (concept2, concept1),
+        # so combinations is better than permutations.
         for concept1, concept2 in combinations(concepts, 2):
-            if concept1 == concept2:
-                continue
-            # Each node provides a weight of 1. Two nodes provide a weight of 2.
-            self.graph.add_edge(concept1, concept2, weight=self.graph.get_edge_data(concept1, concept2, {'weight': 0})['weight'] + 2)
+            self.graph.add_edge(concept1, concept2, weight=self.graph.get_edge_data(concept1, concept2, {'weight': 0})['weight'] + 1)
 
     def cleanup_concepts(self):
-        concepts_potentially_to_remove = [m.concepts for m in self.decayed_memory]
-        # Reduce the set of concept edges by 1 for each concept removed, multiple times if there are.
-        for concept in concepts_potentially_to_remove:
-            try:
-                edge_data = self.graph[concept]
-            except KeyError:
-                continue
-            for far_node in edge_data.keys():
-                self.graph[concept][far_node]['weight'] -= 1
+        for im in self.decayed_memories:
+            for concept1, concept2 in combinations(im.concepts, 2):
+                self.graph[concept1][concept2]['weight'] -= 1
 
+        concepts_potentially_to_remove = [m.concepts for m in self.decayed_memory]
         concepts_potentially_to_remove = set(concepts_potentially_to_remove)
 
         concepts_remaining = set([m.concepts for m in self.short_term_memory]).union(set([m.concepts for m in self.long_term_memory]))
@@ -121,8 +115,12 @@ class MemoryStore:
             self.cleanup_concepts()
             # Filter the interactions marked for deletion
             self.short_term_memory = list(filter(lambda x: x in self.decayed_memory, self.short_term_memory))
+            # Make sure decayed memories do not end up in the final_interactions from the semantic memory retrieval
+            final_interactions = list(filter(lambda x: x in self.decayed_memory, final_interactions))
             # Recluster interactions
-            self.cluster_interactions()
+            # Not necessarily needed as the next interaction added will recluster them anyway,
+            # enable this only to ensure data consistency.
+            # self.cluster_interactions()
 
         # Sort retrieved interaction by timestamp
         final_interactions.sort(lambda x: x.timestamp)
@@ -151,9 +149,13 @@ class MemoryStore:
                 else:
                     # Apply decay for non-relevant interactions
                     im.decay_factor *= 0.9
-                    # Mark for forgetting
-                    if im not in self.long_term_memory and im.decay_factor < 0.1:
+                    # Mark non-committed short-term memories for forgetting
+                    if im not in self.long_term_memory and im.decay_factor < 0.3:
                         self.decayed_memory.append(im)
+                    # Allow very heavily decayed interactions to be forgotten, even if in long-term memory 
+                    elif im in self.long_term_memory and im.decay_factor < 0.000001:
+                        self.decayed_memory.append(im)
+                        self.long_term_memory.pop(im)
         for im in self.decayed_memory:
             self.short_term_memory.pop(im)
 

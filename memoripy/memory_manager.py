@@ -101,7 +101,7 @@ class MemoryManager:
 
     def extract_concepts(self, text: str) -> list[str]:
         logger.info("Extracting key concepts from the provided text...")
-        return self.chat_model.extract_concepts(text)
+        return list(set(self.chat_model.extract_concepts(text)))
 
     def initialize_memory(self):
         short_term, long_term = self.load_history()
