@@ -20,7 +20,7 @@ Here's an unordered list of improvements I have brought:
 
 - **The storage options now include DBMSs with SQLStorage** and the accompanying ORM allows for different "Owners" to have their own memories.
 
-- **The "interaction" has now its own object class: InteractionData.** This simplifies a lot of code.
+- **The "interaction" has now its own object class: ```Interaction```.** This simplifies a lot of code.
 
 - **LLM responses can now be streamed.**
 
