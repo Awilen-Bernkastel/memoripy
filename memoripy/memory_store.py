@@ -197,7 +197,7 @@ class MemoryStore:
         kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
 
         # Build semantic memory clusters
-        labeled_interactions = list(zip(kmeans.labels_, self.short_term_memory)).sort(lambda x,_: x)
+        labeled_interactions = list(zip(kmeans.labels_, self.short_term_memory)).sort(key=lambda x: x[0])
         for interaction, label in labeled_interactions:
             self.semantic_memory[label].append(interaction)
 
