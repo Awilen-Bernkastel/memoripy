@@ -21,6 +21,7 @@ class MemoryStore:
         self.decayed_memory = []     # Short-term memory ready for forgetting
         self.graph = nx.Graph()      # Graph for bidirectional associations
         self.semantic_memory = defaultdict(list)  # Semantic memory clusters
+        self.kmeans:KMeans = None
 
     def add_interaction(self, interaction: Interaction):
         # Reshape the embedding if necessary
@@ -43,7 +44,6 @@ class MemoryStore:
         # Add all interactions at once
         logger.info(f"Adding {len(interactions)} interactions to short-term memory...")
         for interaction in interactions:
-            interaction.embedding = np.array(interaction.embedding).reshape(1, -1)
             self.short_term_memory.append(interaction)
             self.update_graph(interaction.concepts)
         # Only do the clustering once
@@ -79,7 +79,7 @@ class MemoryStore:
         relevant_interactions = []
         current_time = time.time()
 
-        # Calculate adjusted similarity for each interaction
+        # Compute adjusted similarity for each interaction
         if len(self.short_term_memory) > exclude_last_n:
             # Extract by adjusted similarity
             relevant_interactions = list( # Cast to a list
@@ -101,12 +101,13 @@ class MemoryStore:
             final_interactions.append((total_score, interaction))
 
         # Sort interactions based on total_score
-        final_interactions.sort(key=lambda x: x[0], reverse=True)
+        final_interactions = sorted(final_interactions, key=lambda x: x[0], reverse=True)
         final_interactions = [interaction for _, interaction in final_interactions]
 
         # Retrieve from semantic memory
         semantic_interactions = self.retrieve_from_semantic_memory(query_interaction)
-        list(set(final_interactions.extend(semantic_interactions)))
+        final_interactions.extend(semantic_interactions)
+        final_interactions = list(set(final_interactions))
 
         # Update interaction access
         self.update_interactions(final_interactions, current_time, exclude_last_n)
@@ -124,7 +125,7 @@ class MemoryStore:
             # self.cluster_interactions()
 
         # Sort retrieved interaction by timestamp
-        final_interactions.sort(lambda x: x.timestamp)
+        final_interactions = sorted(final_interactions, key = lambda x: x.timestamp)
 
         logger.info(f"Retrieved {len(final_interactions)} relevant interactions from memory.")
         return final_interactions
@@ -186,20 +187,33 @@ class MemoryStore:
         return activated_nodes
 
     def cluster_interactions(self):
-        self.semantic_memory = defaultdict(list)
-        logger.info("Clustering interactions to create hierarchical memory...")
+
+        logger.info(f"Clustering {len(self.short_term_memory)} interactions to create hierarchical memory...")
         if len(self.short_term_memory) < 2:
             logger.info("Not enough interactions to perform clustering.")
             return
 
-        embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory])
         num_clusters = math.floor(math.sqrt(len(self.short_term_memory))) # Allow a growing number of clusters without going overboard.
-        kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
 
-        # Build semantic memory clusters
-        labeled_interactions = list(zip(kmeans.labels_, self.short_term_memory)).sort(key=lambda x: x[0])
-        for interaction, label in labeled_interactions:
-            self.semantic_memory[label].append(interaction)
+        # If the number of clusters needs to change due to expanding or shrinking of self.short_term_memory
+        if num_clusters != len(self.semantic_memory.keys()):
+            # Recluster interactions
+            logging.info("Clustering all interactions...")
+            self.semantic_memory = defaultdict(list)
+            embeddings_matrix = np.vstack([im.embedding for im in self.short_term_memory])
+            self.kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(embeddings_matrix)
+            # Build semantic memory clusters
+            interactions = list(zip(self.kmeans.labels_, self.short_term_memory))
+            labeled_interactions = sorted(interactions, key=lambda x: x[0])
+            for label, interaction in labeled_interactions:
+                self.semantic_memory[label].append(interaction)
+        else:
+            # Cluster the last interaction within the existing clusters, avoids recomputing the clusters for each interaction
+            # This leads to a degradation of the quality of clusters until the interactions are clustered again.
+            logging.info("Addint new interaction to clusters...")
+            last_interaction = self.short_term_memory[-1]
+            labels = self.kmeans.predict(last_interaction.embedding)
+            self.semantic_memory[labels[0]].append(last_interaction)
 
         logger.info(f"Clustering completed. Total clusters formed: {num_clusters}")
 
@@ -223,10 +237,10 @@ class MemoryStore:
 
         # Retrieve interactions from the best cluster
         cluster_items = self.semantic_memory[best_cluster_label]
-        interactions = [(e, i) for e, i in cluster_items]
+        interactions = [(i.embedding, i) for i in cluster_items]
 
         # Sort interactions based on similarity to the query
-        interactions.sort(key=lambda x: query_interaction.embedding_similarity(normalize(x[0])), reverse=True)
+        interactions = sorted(interactions, key=lambda x: query_interaction.embedding_similarity(normalize(x[0])), reverse=True)
         semantic_interactions = interactions[:5]  # Limit to top 5 interactions
 
         logger.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
