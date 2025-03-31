@@ -237,10 +237,9 @@ class MemoryStore:
 
         # Retrieve interactions from the best cluster
         cluster_items = self.semantic_memory[best_cluster_label]
-        interactions = [(i.embedding, i) for i in cluster_items]
 
         # Sort interactions based on similarity to the query
-        interactions = sorted(interactions, key=lambda x: query_interaction.embedding_similarity(normalize(x[0])), reverse=True)
+        interactions = list(sorted(cluster_items, key=lambda x: query_interaction.embedding_similarity(x.embedding), reverse=True))
         semantic_interactions = interactions[:5]  # Limit to top 5 interactions
 
         logger.info(f"Retrieved {len(semantic_interactions)} interactions from the best matching cluster.")
