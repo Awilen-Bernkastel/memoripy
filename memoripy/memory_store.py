@@ -154,35 +154,60 @@ class MemoryStore:
                         self.decayed_memory.append(im)
                         logger.info(f"Moved interaction {im.id} to decayed memory.")
                     # Allow very heavily decayed interactions to be forgotten, even if in long-term memory 
-                    elif im in self.long_term_memory and im.decay_factor < 0.000000000126: # From 2.56 (10 rememberances from 1.0), that's about 250 interactions without reinforcement
+                    elif im in self.long_term_memory and im.decay_factor < 0.000000000126:
                         self.decayed_memory.append(im)
                         self.long_term_memory.pop(im)
                         logger.info(f"Moved interaction {im.id} from long-term memory to decayed memory.")
 
+    # def spreading_activation(self, query_interaction: Interaction):
+    #     logger.info("Spreading activation for concept associations...")
+    #     activated_nodes = {}
+    #     initial_activation = 1.0
+    #     decay_factor = 0.5  # How much the activation decays each step
+
+    #     # Initialize activation levels
+    #     for concept in query_interaction.concepts:
+    #         activated_nodes[concept] = initial_activation
+
+    #     # Spread activation over the graph
+    #     for step in range(2):  # Number of steps to spread activation
+    #         new_activated_nodes = {}
+    #         for node in activated_nodes:
+    #             if node in self.graph:  # Check if the node exists in the graph
+    #                 for neighbor in self.graph.neighbors(node):
+    #                     if neighbor not in activated_nodes:
+    #                         weight = self.graph[node][neighbor]['weight']
+    #                         new_activation = activated_nodes[node] * decay_factor * weight
+    #                         new_activated_nodes[neighbor] = new_activated_nodes.get(neighbor, 0) + new_activation
+    #         activated_nodes.update(new_activated_nodes)
+
+    #     logger.info(f"Concepts activated after spreading: {activated_nodes}")
+    #     return activated_nodes
+
+    # Trying out a numpy-enabled version of spreading_activation
     def spreading_activation(self, query_interaction: Interaction):
         logger.info("Spreading activation for concept associations...")
-        activated_nodes = {}
-        initial_activation = 1.0
-        decay_factor = 0.5  # How much the activation decays each step
 
         # Initialize activation levels
-        for concept in query_interaction.concepts:
-            activated_nodes[concept] = initial_activation
+        initial_activation = 1.0
+        decay_factor = 0.5
+
+        concepts = np.array(query_interaction.concepts)
+        activated_nodes = np.zeros(len(concepts))
+        activated_nodes[np.isin(concepts, self.graph.nodes())] = initial_activation
 
         # Spread activation over the graph
-        for step in range(2):  # Number of steps to spread activation
-            new_activated_nodes = {}
-            for node in activated_nodes:
-                if node in self.graph:  # Check if the node exists in the graph
-                    for neighbor in self.graph.neighbors(node):
-                        if neighbor not in activated_nodes:
-                            weight = self.graph[node][neighbor]['weight']
-                            new_activation = activated_nodes[node] * decay_factor * weight
-                            new_activated_nodes[neighbor] = new_activated_nodes.get(neighbor, 0) + new_activation
-            activated_nodes.update(new_activated_nodes)
+        for _ in range(2):  # Number of steps to spread activation
+            neighbors = concepts[self.graph.has_node(concepts)]
+            neighbor_indices = np.searchsorted(concepts, neighbors)
+
+            weights = self.graph[concepts, neighbors].get('weight', 0)
+            new_activation = activated_nodes[neighbor_indices] * decay_factor * weights
+
+            activated_nodes += new_activation
 
         logger.info(f"Concepts activated after spreading: {activated_nodes}")
-        return activated_nodes
+        return dict(zip(concepts, activated_nodes))
 
     def cluster_interactions(self):
 
