@@ -119,8 +119,7 @@ class MemoryManager:
         context = self.prompt_elements["intro"]
         if retrievals:
             context += self.prompt_elements["intro_ltm"]
-            retrieved_context = "\n".join([f"({datetime.fromtimestamp(r["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')}) {self.prompt_elements["ltm_user"]}\
-                                           {r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrievals])
+            retrieved_context = "\n".join([f"({datetime.fromtimestamp(r["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')}) {self.prompt_elements["ltm_user"]}{r['prompt']}\n{self.prompt_elements["ltm_agent"]}{r['output']}" for r in retrievals])
             logger.info(f"Using the following retrieved interactions as context for response generation:\n{retrieved_context}")
             context += "\n" + retrieved_context
             context += self.prompt_elements["outro_ltm"]
