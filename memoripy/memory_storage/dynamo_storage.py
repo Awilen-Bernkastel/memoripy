@@ -3,6 +3,7 @@
 import logging
 import os
 from dotenv import load_dotenv
+import numpy as np
 from pynamodb.models import Model
 from pynamodb.attributes import (
     UnicodeAttribute,
@@ -176,6 +177,7 @@ class DynamoStorage(BaseStorage):
 
     @staticmethod
     def _attr_to_model(attr, model_class):
+        attr['embedding'] = np.array(attr['embedding']).reshape(1, -1)
         return create_model(model_class.__name__, **{k: v for k, v in attr.items()})
 
     def _memory_to_attr(self, memory, attr_class):

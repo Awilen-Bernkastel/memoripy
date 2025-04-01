@@ -7,6 +7,7 @@
 
 import logging
 
+import numpy as np
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from ..interaction import Interaction
@@ -54,7 +55,7 @@ class SQLStorage(BaseStorage):
                 im.id = interaction.uuid
                 im.prompt = interaction.prompt
                 im.output = interaction.output
-                im.embedding = [x.embedding for x in interaction.embedding]
+                im.embedding = np.array([x.embedding for x in interaction.embedding]).reshape(1, -1)
                 im.timestamp = interaction.timestamp
                 im.concepts = [x.concept for x in interaction.concepts]
                 im.access_count = interaction.access_count
