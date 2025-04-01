@@ -64,7 +64,7 @@ class OllamaChatModel(ChatModel):
         concepts = None
         retries = 1
         response = ""
-        while concepts is None or retries < 5:
+        while concepts is None and retries < 5:
             try:
                 response = chain.invoke({"text": text})
                 concepts = response.get("concepts", [])
