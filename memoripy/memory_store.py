@@ -63,9 +63,7 @@ class MemoryStore:
                 self.graph[concept1][concept2]['weight'] -= 1
 
         # Filter the concepts that can be removed from the interactions ready to be forgotten, off of the remaining interactions
-        concepts_potentially_to_remove = {x.concepts for x in self.decayed_memory}
-        concepts_remaining = {x.concepts for x in self.short_term_memory}
-        concepts_to_remove = filter(lambda x: x not in concepts_remaining, concepts_potentially_to_remove)
+        concepts_to_remove = {x.concepts for x in self.decayed_memory} - {x.concepts for x in self.short_term_memory}
 
         # Remove the necessary nodes from the concept graph if there's no interaction containing the concept anymore
         self.graph.remove_nodes_from(concepts_to_remove)
