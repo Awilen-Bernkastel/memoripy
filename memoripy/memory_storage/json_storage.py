@@ -5,6 +5,7 @@ import os
 
 from ..interaction import Interaction
 from .storage import BaseStorage
+import numpy as np
 
 logger = logging.getLogger("memoripy")
 
@@ -65,7 +66,7 @@ class JSONStorage(BaseStorage):
             id=memory['id'],
             prompt=memory['prompt'],
             output=memory['output'],
-            embedding=memory['embedding'],
+            embedding=np.array(memory['embedding']).reshape(1, -1),
             timestamp=memory['timestamp'],
             last_accessed=memory['last_accessed'],
             access_count=memory['access_count'],
